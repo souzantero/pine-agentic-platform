@@ -37,7 +37,7 @@ function ButtonGroup({
         size="sm"
         onClick={handleShowState}
       >
-        State
+        Estado
       </Button>
       <Button
         variant="outline"
@@ -48,7 +48,7 @@ function ButtonGroup({
         size="sm"
         onClick={handleShowDescription}
       >
-        Description
+        Descrição
       </Button>
     </div>
   );
@@ -85,8 +85,8 @@ export function ThreadActionsView({
 
   const handleOpenInStudio = () => {
     if (!apiUrl) {
-      toast.error("Error", {
-        description: "Please set the LangGraph deployment URL in settings.",
+      toast.error("Erro", {
+        description: "Por favor, configure a URL de implantação do LangGraph nas configurações.",
         duration: 5000,
         richColors: true,
         closeButton: true,
@@ -98,7 +98,7 @@ export function ThreadActionsView({
     window.open(studioUrl, "_blank");
   };
 
-  const threadTitle = interrupt.action_request.action || "Unknown";
+  const threadTitle = interrupt.action_request.action || "Desconhecido";
   const actionsDisabled = loading || streaming;
   const ignoreAllowed = interrupt.config.allow_ignore;
 
@@ -137,7 +137,7 @@ export function ThreadActionsView({
           onClick={handleResolve}
           disabled={actionsDisabled}
         >
-          Mark as Resolved
+          Marcar como Resolvido
         </Button>
         {ignoreAllowed && (
           <Button
@@ -146,7 +146,7 @@ export function ThreadActionsView({
             onClick={handleIgnore}
             disabled={actionsDisabled}
           >
-            Ignore
+            Ignorar
           </Button>
         )}
       </div>

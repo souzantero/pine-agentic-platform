@@ -71,7 +71,7 @@ function ScrollToBottom(props: { className?: string }) {
       onClick={() => scrollToBottom()}
     >
       <ArrowDown className="w-4 h-4" />
-      <span>Scroll to bottom</span>
+      <span>Rolar para baixo</span>
     </Button>
   );
 }
@@ -118,10 +118,10 @@ export function Thread() {
 
       // Message is defined, and it has not been logged yet. Save it, and send the error
       lastError.current = message;
-      toast.error("An error occurred. Please try again.", {
+      toast.error("Ocorreu um erro. Por favor, tente novamente.", {
         description: (
           <p>
-            <strong>Error:</strong> <code>{message}</code>
+            <strong>Erro:</strong> <code>{message}</code>
           </p>
         ),
         richColors: true,
@@ -305,7 +305,7 @@ export function Thread() {
               <TooltipIconButton
                 size="lg"
                 className="p-4"
-                tooltip="New chat"
+                tooltip="Novo chat"
                 variant="ghost"
                 onClick={() => setThreadId(null)}
               >
@@ -314,7 +314,7 @@ export function Thread() {
               <TooltipIconButton
                 size="lg"
                 className="p-4"
-                tooltip="Sign out"
+                tooltip="Sair"
                 variant="ghost"
                 onClick={handleLogout}
               >
@@ -403,7 +403,7 @@ export function Thread() {
                           form?.requestSubmit();
                         }
                       }}
-                      placeholder="Hi, how can I help you today?"
+                      placeholder="Olá, como posso ajudá-lo hoje?"
                       className="p-3.5 pb-0 border-none bg-transparent field-sizing-content shadow-none ring-0 outline-none focus:outline-none focus:ring-0 resize-none"
                     />
 
@@ -419,14 +419,14 @@ export function Thread() {
                             htmlFor="render-tool-calls"
                             className="text-sm text-gray-600"
                           >
-                            Hide tools
+                            Ocultar ferramentas
                           </Label>
                         </div>
                       </div>
                       {stream.isLoading ? (
                         <Button key="stop" onClick={() => stream.stop()}>
                           <LoaderCircle className="w-4 h-4 animate-spin" />
-                          Cancel
+                          Cancelar
                         </Button>
                       ) : (
                         <Button
@@ -434,7 +434,7 @@ export function Thread() {
                           className="transition-all shadow-md"
                           disabled={isLoading || !input.trim()}
                         >
-                          Send
+                          Enviar
                         </Button>
                       )}
                     </div>

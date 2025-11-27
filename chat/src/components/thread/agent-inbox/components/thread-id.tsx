@@ -49,7 +49,7 @@ export function ThreadIdCopyable({
     <TooltipIconButton
       onClick={(e) => handleCopy(e)}
       variant="ghost"
-      tooltip="Copy thread ID"
+      tooltip="Copiar ID da thread"
       className="flex flex-grow-0 gap-1 items-center p-1 rounded-md border-[1px] cursor-pointer hover:bg-gray-50/90 border-gray-200 w-fit"
     >
       <p className="font-mono text-xs">{showUUID ? threadId : "ID"}</p>

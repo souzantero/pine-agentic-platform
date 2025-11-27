@@ -17,7 +17,7 @@ function ResetButton({ handleReset }: { handleReset: () => void }) {
       className="flex items-center justify-center gap-2 text-gray-500 hover:text-red-500"
     >
       <Undo2 className="w-4 h-4" />
-      <span>Reset</span>
+      <span>Resetar</span>
     </Button>
   );
 }
@@ -107,7 +107,7 @@ function ResponseComponent({
     <div className="flex flex-col gap-4 p-6 items-start w-full rounded-xl border-[1px] border-gray-300">
       <div className="flex items-center justify-between w-full">
         <p className="font-semibold text-black text-base">
-          Respond to assistant
+          Responder ao assistente
         </p>
         <ResetButton
           handleReset={() => {
@@ -121,20 +121,20 @@ function ResponseComponent({
       )}
 
       <div className="flex flex-col gap-[6px] items-start w-full">
-        <p className="text-sm min-w-fit font-medium">Response</p>
+        <p className="text-sm min-w-fit font-medium">Resposta</p>
         <Textarea
           disabled={streaming}
           value={res.args}
           onChange={(e) => onResponseChange(e.target.value, res)}
           onKeyDown={handleKeyDown}
           rows={4}
-          placeholder="Your response here..."
+          placeholder="Sua resposta aqui..."
         />
       </div>
 
       <div className="flex items-center justify-end w-full gap-2">
         <Button variant="brand" disabled={streaming} onClick={handleSubmit}>
-          Send Response
+          Enviar Resposta
         </Button>
       </div>
     </div>
@@ -164,7 +164,7 @@ function AcceptComponent({
         onClick={handleSubmit}
         className="w-full"
       >
-        Accept
+        Aceitar
       </Button>
     </div>
   );
@@ -210,10 +210,10 @@ function EditAndOrAcceptComponent({
     }
     return null;
   }
-  const header = editResponse.acceptAllowed ? "Edit/Accept" : "Edit";
-  let buttonText = "Submit";
+  const header = editResponse.acceptAllowed ? "Editar/Aceitar" : "Editar";
+  let buttonText = "Enviar";
   if (editResponse.acceptAllowed && !editResponse.editsMade) {
-    buttonText = "Accept";
+    buttonText = "Aceitar";
   }
 
   const handleReset = () => {
@@ -337,8 +337,8 @@ export function InboxItemInput({
       (Array.isArray(change) && !Array.isArray(key)) ||
       (!Array.isArray(change) && Array.isArray(key))
     ) {
-      toast.error("Error", {
-        description: "Something went wrong",
+      toast.error("Erro", {
+        description: "Algo deu errado",
         richColors: true,
         closeButton: true,
       });
@@ -497,7 +497,7 @@ export function InboxItemInput({
         {supportsMultipleMethods ? (
           <div className="flex gap-3 items-center mx-auto mt-3">
             <Separator className="w-[full]" />
-            <p className="text-sm text-gray-500">Or</p>
+            <p className="text-sm text-gray-500">Ou</p>
             <Separator className="w-full" />
           </div>
         ) : null}
@@ -509,10 +509,10 @@ export function InboxItemInput({
           onResponseChange={onResponseChange}
           handleSubmit={handleSubmit}
         />
-        {streaming && <p className="text-sm text-gray-600">Running...</p>}
+        {streaming && <p className="text-sm text-gray-600">Executando...</p>}
         {streamFinished && (
           <p className="text-base text-green-600 font-medium">
-            Successfully finished Graph invocation.
+            Invocação do Grafo concluída com sucesso.
           </p>
         )}
       </div>

@@ -102,10 +102,10 @@ const StreamSession = ({
   useEffect(() => {
     checkGraphStatus(apiUrl, bearerToken).then((ok) => {
       if (!ok) {
-        toast.error("Failed to connect to LangGraph server", {
+        toast.error("Falha ao conectar ao servidor LangGraph", {
           description: () => (
             <p>
-              Please ensure your graph is running at <code>{apiUrl}</code>.
+              Por favor, verifique se seu grafo está executando em <code>{apiUrl}</code>.
             </p>
           ),
           duration: 10000,
@@ -142,15 +142,15 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Welcome to Pinechat! Please configure the required environment
-              variables to get started.
+              Bem-vindo ao Pinechat! Por favor, configure as variáveis de ambiente
+              necessárias para começar.
             </p>
           </div>
           <div className="flex flex-col gap-6 p-6 bg-muted/50">
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">Missing Configuration</p>
+              <p className="text-sm font-medium">Configuração Ausente</p>
               <p className="text-muted-foreground text-sm">
-                Please set the following environment variables:
+                Por favor, configure as seguintes variáveis de ambiente:
               </p>
               <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
                 {!apiUrl && (
@@ -158,7 +158,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
                     <code className="text-xs bg-muted px-1 py-0.5 rounded">
                       NEXT_PUBLIC_API_URL
                     </code>{" "}
-                    - The URL of your LangGraph deployment
+                    - A URL da sua implantação do LangGraph
                   </li>
                 )}
                 {!assistantId && (
@@ -166,7 +166,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
                     <code className="text-xs bg-muted px-1 py-0.5 rounded">
                       NEXT_PUBLIC_ASSISTANT_ID
                     </code>{" "}
-                    - The assistant / graph ID
+                    - O ID do assistente / grafo
                   </li>
                 )}
               </ul>

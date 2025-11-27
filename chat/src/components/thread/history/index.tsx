@@ -104,7 +104,7 @@ export default function ThreadHistory() {
             )}
           </Button>
           <h1 className="text-xl font-semibold tracking-tight">
-            History
+            Histórico
           </h1>
         </div>
         {threadsLoading ? (
@@ -123,7 +123,7 @@ export default function ThreadHistory() {
         >
           <SheetContent side="left" className="lg:hidden flex">
             <SheetHeader>
-              <SheetTitle>History</SheetTitle>
+              <SheetTitle>Histórico</SheetTitle>
             </SheetHeader>
             <ThreadList
               threads={threads}

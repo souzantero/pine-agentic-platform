@@ -33,7 +33,7 @@ function ContentCopyable({
     <TooltipIconButton
       onClick={(e) => handleCopy(e)}
       variant="ghost"
-      tooltip="Copy content"
+      tooltip="Copiar conteúdo"
       disabled={disabled}
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -165,7 +165,7 @@ export function CommandBar({
       <div className="flex items-center gap-2">
         <TooltipIconButton
           disabled={isLoading}
-          tooltip="Cancel edit"
+          tooltip="Cancelar edição"
           variant="ghost"
           onClick={() => {
             setIsEditing(false);
@@ -175,7 +175,7 @@ export function CommandBar({
         </TooltipIconButton>
         <TooltipIconButton
           disabled={isLoading}
-          tooltip="Submit"
+          tooltip="Enviar"
           variant="secondary"
           onClick={handleSubmitEdit}
         >
@@ -191,7 +191,7 @@ export function CommandBar({
       {isAiMessage && !!handleRegenerate && (
         <TooltipIconButton
           disabled={isLoading}
-          tooltip="Refresh"
+          tooltip="Atualizar"
           variant="ghost"
           onClick={handleRegenerate}
         >
@@ -201,7 +201,7 @@ export function CommandBar({
       {showEdit && (
         <TooltipIconButton
           disabled={isLoading}
-          tooltip="Edit"
+          tooltip="Editar"
           variant="ghost"
           onClick={() => {
             setIsEditing?.(true);

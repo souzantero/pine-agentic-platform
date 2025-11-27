@@ -27,7 +27,7 @@ export function SignIn() {
     const { error } = await signIn(email, password);
 
     if (error) {
-      toast.error("Authentication failed", {
+      toast.error("Falha na autenticação", {
         description: error.message,
       });
       setIsLoading(false);
@@ -47,20 +47,20 @@ export function SignIn() {
             <h1 className="text-3xl font-bold tracking-tight">Pinechat</h1>
           </div>
           <div className="text-center">
-            <CardTitle className="text-2xl">Welcome back</CardTitle>
+            <CardTitle className="text-2xl">Bem-vindo de volta</CardTitle>
             <CardDescription className="mt-2">
-              Sign in to your account to continue
+              Entre na sua conta para continuar
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="email">Endereço de e-mail</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="voce@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -69,10 +69,10 @@ export function SignIn() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Senha</Label>
               <PasswordInput
                 id="password"
-                placeholder="Enter your password"
+                placeholder="Digite sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -81,7 +81,7 @@ export function SignIn() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading || !email.trim() || !password.trim()}>
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
         </CardContent>
