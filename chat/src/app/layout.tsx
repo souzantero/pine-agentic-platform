@@ -15,6 +15,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Pinechat",
   description: "Pinechat by Pine Software",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
