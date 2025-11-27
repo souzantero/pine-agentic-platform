@@ -2,7 +2,6 @@ import React, {
   createContext,
   useContext,
   ReactNode,
-  useState,
   useEffect,
 } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
@@ -13,13 +12,7 @@ import {
   type RemoveUIMessage,
 } from "@langchain/langgraph-sdk/react-ui";
 import { useQueryState } from "nuqs";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { LogoSVG } from "@/components/icons/logo";
-import { Label } from "@/components/ui/label";
-import { ArrowRight } from "lucide-react";
-import { PasswordInput } from "@/components/ui/password-input";
-import { getApiKey } from "@/lib/api-key";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
 import { useAuth } from "./Auth";
@@ -47,15 +40,10 @@ async function sleep(ms = 4000) {
 
 async function checkGraphStatus(
   apiUrl: string,
-  apiKey: string | null,
   bearerToken?: string,
 ): Promise<boolean> {
   try {
     const headers: Record<string, string> = {};
-
-    if (apiKey) {
-      headers["X-Api-Key"] = apiKey;
-    }
 
     if (bearerToken) {
       headers["Authorization"] = `Bearer ${bearerToken}`;
@@ -74,12 +62,10 @@ async function checkGraphStatus(
 
 const StreamSession = ({
   children,
-  apiKey,
   apiUrl,
   assistantId,
 }: {
   children: ReactNode;
-  apiKey: string | null;
   apiUrl: string;
   assistantId: string;
 }) => {
@@ -92,7 +78,6 @@ const StreamSession = ({
 
   const streamValue = useTypedStream({
     apiUrl,
-    apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
     ...(bearerToken && {
@@ -115,13 +100,12 @@ const StreamSession = ({
   });
 
   useEffect(() => {
-    checkGraphStatus(apiUrl, apiKey, bearerToken).then((ok) => {
+    checkGraphStatus(apiUrl, bearerToken).then((ok) => {
       if (!ok) {
         toast.error("Failed to connect to LangGraph server", {
           description: () => (
             <p>
-              Please ensure your graph is running at <code>{apiUrl}</code> and
-              your API key is correctly set (if connecting to a deployed graph).
+              Please ensure your graph is running at <code>{apiUrl}</code>.
             </p>
           ),
           duration: 10000,
@@ -130,7 +114,7 @@ const StreamSession = ({
         });
       }
     });
-  }, [apiKey, apiUrl, bearerToken]);
+  }, [apiUrl, bearerToken]);
 
   return (
     <StreamContext.Provider value={streamValue}>
@@ -139,35 +123,14 @@ const StreamSession = ({
   );
 };
 
-// Default values for the form
-const DEFAULT_API_URL = "http://localhost:2024";
-const DEFAULT_ASSISTANT_ID = "agent";
-
 export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   // Use shared hook for config
-  const { apiUrl, assistantId, finalApiUrl, finalAssistantId } = useLangGraphConfig();
-  const [, setApiUrl] = useQueryState("apiUrl");
-  const [, setAssistantId] = useQueryState("assistantId");
+  const { apiUrl, assistantId } = useLangGraphConfig();
 
-  // Get environment variables for API key
-  const envApiKey: string | undefined =
-    process.env.NEXT_PUBLIC_LANGSMITH_API_KEY;
-
-  // For API key, use localStorage with env var fallback
-  const [apiKey, _setApiKey] = useState(() => {
-    const storedKey = getApiKey();
-    return storedKey || envApiKey || "";
-  });
-
-  const setApiKey = (key: string) => {
-    window.localStorage.setItem("lg:chat:apiKey", key);
-    _setApiKey(key);
-  };
-
-  // If we're missing any required values, show the form
-  if (!finalApiUrl || !finalAssistantId) {
+  // If we're missing any required values, show the configuration message
+  if (!apiUrl || !assistantId) {
     return (
       <div className="flex items-center justify-center min-h-screen w-full p-4">
         <div className="animate-in fade-in-0 zoom-in-95 flex flex-col border bg-background shadow-lg rounded-lg max-w-3xl">
@@ -179,94 +142,43 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Welcome to Pinechat! Before you get started, you need to enter
-              the URL of the deployment and the assistant / graph ID.
+              Welcome to Pinechat! Please configure the required environment
+              variables to get started.
             </p>
           </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-
-              const form = e.target as HTMLFormElement;
-              const formData = new FormData(form);
-              const apiUrl = formData.get("apiUrl") as string;
-              const assistantId = formData.get("assistantId") as string;
-              const apiKey = formData.get("apiKey") as string;
-
-              setApiUrl(apiUrl);
-              setApiKey(apiKey);
-              setAssistantId(assistantId);
-
-              form.reset();
-            }}
-            className="flex flex-col gap-6 p-6 bg-muted/50"
-          >
+          <div className="flex flex-col gap-6 p-6 bg-muted/50">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="apiUrl">
-                Deployment URL<span className="text-rose-500">*</span>
-              </Label>
+              <p className="text-sm font-medium">Missing Configuration</p>
               <p className="text-muted-foreground text-sm">
-                This is the URL of your LangGraph deployment. Can be a local, or
-                production deployment.
+                Please set the following environment variables:
               </p>
-              <Input
-                id="apiUrl"
-                name="apiUrl"
-                className="bg-background"
-                defaultValue={apiUrl || DEFAULT_API_URL}
-                required
-              />
+              <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
+                {!apiUrl && (
+                  <li>
+                    <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                      NEXT_PUBLIC_API_URL
+                    </code>{" "}
+                    - The URL of your LangGraph deployment
+                  </li>
+                )}
+                {!assistantId && (
+                  <li>
+                    <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                      NEXT_PUBLIC_ASSISTANT_ID
+                    </code>{" "}
+                    - The assistant / graph ID
+                  </li>
+                )}
+              </ul>
             </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="assistantId">
-                Assistant / Graph ID<span className="text-rose-500">*</span>
-              </Label>
-              <p className="text-muted-foreground text-sm">
-                This is the ID of the graph (can be the graph name), or
-                assistant to fetch threads from, and invoke when actions are
-                taken.
-              </p>
-              <Input
-                id="assistantId"
-                name="assistantId"
-                className="bg-background"
-                defaultValue={assistantId || DEFAULT_ASSISTANT_ID}
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="apiKey">LangSmith API Key</Label>
-              <p className="text-muted-foreground text-sm">
-                This is <strong>NOT</strong> required if using a local LangGraph
-                server. This value is stored in your browser's local storage and
-                is only used to authenticate requests sent to your LangGraph
-                server.
-              </p>
-              <PasswordInput
-                id="apiKey"
-                name="apiKey"
-                defaultValue={apiKey ?? ""}
-                className="bg-background"
-                placeholder="lsv2_pt_..."
-              />
-            </div>
-
-            <div className="flex justify-end mt-2">
-              <Button type="submit" size="lg">
-                Continue
-                <ArrowRight className="size-5" />
-              </Button>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <StreamSession apiKey={apiKey} apiUrl={finalApiUrl} assistantId={finalAssistantId}>
+    <StreamSession apiUrl={apiUrl} assistantId={assistantId}>
       {children}
     </StreamSession>
   );

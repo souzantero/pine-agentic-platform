@@ -1,5 +1,4 @@
 import { validate } from "uuid";
-import { getApiKey } from "@/lib/api-key";
 import { Thread } from "@langchain/langgraph-sdk";
 import {
   createContext,
@@ -35,26 +34,26 @@ function getThreadSearchMetadata(
 }
 
 export function ThreadProvider({ children }: { children: ReactNode }) {
-  const { finalApiUrl, finalAssistantId } = useLangGraphConfig();
+  const { apiUrl, assistantId } = useLangGraphConfig();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
   const { session } = useAuth();
 
   const getThreads = useCallback(async (): Promise<Thread[]> => {
-    if (!finalApiUrl || !finalAssistantId) return [];
+    if (!apiUrl || !assistantId) return [];
 
     const bearerToken = session?.access_token;
-    const client = createClient(finalApiUrl, getApiKey() ?? undefined, bearerToken);
+    const client = createClient(apiUrl, bearerToken);
 
     const threads = await client.threads.search({
       metadata: {
-        ...getThreadSearchMetadata(finalAssistantId),
+        ...getThreadSearchMetadata(assistantId),
       },
       limit: 100,
     });
 
     return threads;
-  }, [finalApiUrl, finalAssistantId, session]);
+  }, [apiUrl, assistantId, session]);
 
   const value = {
     getThreads,
