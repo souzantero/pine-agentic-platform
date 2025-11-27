@@ -1,7 +1,13 @@
 from langchain.agents import create_agent
-from langchain.chat_models import init_chat_model
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-model = init_chat_model("openai:gpt-5", temperature=0.1)
+model = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    temperature=0.1,
+    max_tokens=None,
+    timeout=None,
+    max_retries=3,
+)
 
 agent = create_agent(
     model=model,
