@@ -107,7 +107,7 @@ const StreamSession = ({
   useEffect(() => {
     checkGraphStatus(apiUrl, bearerToken).then((ok) => {
       if (!ok) {
-        toast.error("Falha ao conectar ao servidor LangGraph", {
+        toast.error("Falha ao conectar ao servidor", {
           description: () => (
             <p>
               Por favor, certifique-se de que seu grafo está sendo executado em <code>{apiUrl}</code>.

@@ -62,7 +62,7 @@ export function SignUp() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-4 flex flex-col items-center">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <LogoSVG width={40} height={40} className="translate-y-0.5" />
             <h1 className="text-3xl font-bold tracking-tight">Pinechat</h1>
           </div>

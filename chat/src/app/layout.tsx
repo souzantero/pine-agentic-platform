@@ -14,7 +14,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Pinechat",
-  description: "Interface de chat com agentes IA por LangChain",
+  description: "Seu assistente de IA inteligente para conversas naturais, criação de conteúdo e resolução de problemas complexos",
 };
 
 export default function RootLayout({

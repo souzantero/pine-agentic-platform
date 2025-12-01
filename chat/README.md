@@ -1,6 +1,6 @@
 # Pinechat
 
-Pinechat is a Next.js application which enables chatting with any LangGraph server with a `messages` key through a chat interface.
+Seu assistente de IA inteligente que entende contexto, gera conteúdo e colabora com você em qualquer tarefa. Converse naturalmente, anexe arquivos, visualize resultados em tempo real e resolva problemas complexos com facilidade.
 
 > [!NOTE]
 > 🎥 Watch the video setup guide [here](https://youtu.be/lInrwVnZ83o).

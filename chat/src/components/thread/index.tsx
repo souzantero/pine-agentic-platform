@@ -335,7 +335,7 @@ export function Thread() {
                   )}
                 </div>
                 <motion.button
-                  className="flex cursor-pointer items-center gap-2"
+                  className="flex cursor-pointer items-center gap-1"
                   onClick={() => setThreadId(null)}
                   animate={{
                     marginLeft: !chatHistoryOpen ? 48 : 0,
@@ -427,7 +427,7 @@ export function Thread() {
               footer={
                 <div className="sticky bottom-0 flex flex-col items-center gap-8 bg-white">
                   {!chatStarted && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
                       <LogoSVG className="h-8 flex-shrink-0" />
                       <h1 className="text-2xl font-semibold tracking-tight">
                         Pinechat
