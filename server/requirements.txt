@@ -4,6 +4,9 @@ fastapi==0.124.3
 langchain==1.0.5
 langchain-community==0.4.1
 langchain-openai==1.1.0
+langgraph-checkpoint-postgres==3.0.2
+psycopg-binary==3.3.2
+psycopg-pool==3.3.0
 psycopg2-binary==2.9.11
 sqlmodel==0.0.27
 uuid==1.30

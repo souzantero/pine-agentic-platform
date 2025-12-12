@@ -1,6 +1,7 @@
 from langchain.agents import create_agent
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.postgres import PostgresSaver
 
 model = ChatOpenAI(
     model="gpt-5",
@@ -14,8 +15,14 @@ model = ChatOpenAI(
 
 search = DuckDuckGoSearchRun()
 
-agent = create_agent(
-    model=model,
-    system_prompt="Você é o Pinechat, um assistente virtual de inteligência artificial.",
-    tools=[search],
-)
+
+def build_agent(checkpointer: PostgresSaver | None = None):
+    return create_agent(
+        model=model,
+        system_prompt="Você é o Pinechat, um assistente virtual de inteligência artificial.",
+        tools=[search],
+        checkpointer=checkpointer,
+    )
+
+
+agent = build_agent()
