@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,40 +19,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { createClient } from "@/lib/supabase/client";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { useAuth } from "@/lib/auth";
 import { LogOut } from "lucide-react";
 
 export function Header() {
   const router = useRouter();
-  const supabaseRef = useRef<SupabaseClient | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const { user, signOut } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const getSupabase = () => {
-    if (!supabaseRef.current) {
-      supabaseRef.current = createClient();
-    }
-    return supabaseRef.current;
-  };
-
-  useEffect(() => {
-    const supabase = getSupabase();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
-  }, []);
-
   const handleLogout = async () => {
     setLoggingOut(true);
-    const supabase = getSupabase();
-    await supabase.auth.signOut();
+    await signOut();
     router.push("/login");
-    router.refresh();
   };
 
-  const getInitials = (user: User | null) => {
+  const getInitials = () => {
     if (!user) return "?";
     const email = user.email || "";
     return email.charAt(0).toUpperCase();
@@ -67,12 +49,16 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
               <Avatar className="cursor-pointer">
-                <AvatarImage src={user?.user_metadata?.avatar_url} />
-                <AvatarFallback>{getInitials(user)}</AvatarFallback>
+                <AvatarFallback>{getInitials()}</AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {user && (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                {user.email}
+              </div>
+            )}
             <DropdownMenuItem
               onClick={() => setShowLogoutDialog(true)}
               disabled={loggingOut}

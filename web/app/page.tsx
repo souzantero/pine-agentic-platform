@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 import { Header } from "@/components/header";
 import { Sidebar, type Conversation } from "@/components/sidebar";
 import { ChatArea, type Message } from "@/components/chat-area";
@@ -10,8 +12,16 @@ interface ConversationWithMessages extends Conversation {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const { isLoggedIn } = useAuth();
   const [conversations, setConversations] = useState<ConversationWithMessages[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push("/login");
+    }
+  }, [isLoggedIn, router]);
 
   const selectedConversation = conversations.find((c) => c.id === selectedId);
 
@@ -28,7 +38,6 @@ export default function Home() {
 
   const handleSendMessage = (content: string) => {
     if (!selectedId) {
-      // Cria nova conversa se não houver uma selecionada
       const newId = crypto.randomUUID();
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -45,7 +54,6 @@ export default function Home() {
       setConversations((prev) => [newConversation, ...prev]);
       setSelectedId(newId);
 
-      // Simula resposta do assistente
       simulateResponse(newId);
       return;
     }
@@ -74,12 +82,10 @@ export default function Home() {
       })
     );
 
-    // Simula resposta do assistente
     simulateResponse(selectedId);
   };
 
   const simulateResponse = (conversationId: string) => {
-    // Simula delay de resposta
     setTimeout(() => {
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
@@ -101,6 +107,11 @@ export default function Home() {
       );
     }, 1000);
   };
+
+  // Não renderiza enquanto redireciona
+  if (!isLoggedIn) {
+    return null;
+  }
 
   return (
     <div className="h-screen flex flex-col">
