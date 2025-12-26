@@ -3,12 +3,13 @@ from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.postgres.base import BaseCheckpointSaver
 
+from src.env import openrouter_api_key, openrouter_base_url
+
 model = ChatOpenAI(
-    model="gpt-5",
-    stream_usage=True,
+    model="google/gemini-2.5-flash-lite",
     temperature=0.1,
-    reasoning_effort="low",
-    max_retries=3,
+    openai_api_key=openrouter_api_key,
+    openai_api_base=openrouter_base_url,
 )
 
 search = DuckDuckGoSearchRun()

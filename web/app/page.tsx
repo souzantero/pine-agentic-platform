@@ -2,8 +2,6 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CopilotKit } from "@copilotkit/react-core";
-import { CopilotChat } from "@copilotkit/react-core/v2";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -40,33 +38,29 @@ export default function Home() {
   };
 
   return (
-    <CopilotKit runtimeUrl="/api/copilotkit" agent="agent">
-      <main className="relative min-h-screen">
-        <div className="absolute top-4 right-4 z-10">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" disabled={loggingOut}>
-                {loggingOut ? "Saindo..." : "Sair"}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Deseja sair?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Você será desconectado da sua conta e redirecionado para a página de login.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleLogout}>
-                  Sair
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-        <CopilotChat />
-      </main>
-    </CopilotKit>
+    <main className="relative min-h-screen">
+      <div className="absolute top-4 right-4 z-10">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" disabled={loggingOut}>
+              {loggingOut ? "Saindo..." : "Sair"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deseja sair?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você será desconectado da sua conta e redirecionado para a
+                página de login.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogout}>Sair</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </main>
   );
 }

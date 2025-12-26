@@ -1,11 +1,11 @@
 from contextlib import asynccontextmanager
+
+from fastapi.responses import StreamingResponse
 import src.env  # noqa: F401
 
-from typing import Annotated
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, Query, Request
 from sqlmodel import Session, col, select
-from copilotkit import LangGraphAGUIAgent
-from ag_ui_langgraph import add_langgraph_fastapi_endpoint
+from typing import Annotated
 
 from src.agent import build_agent
 from src.entities import Thread
@@ -25,15 +25,6 @@ async def lifespan(app: FastAPI):
     await checkpoint_saver.setup()
     agent_graph = build_agent(checkpoint_saver)
 
-    add_langgraph_fastapi_endpoint(
-        app=app,
-        agent=LangGraphAGUIAgent(
-            name="agent",
-            description="Pinechat agent",
-            graph=agent_graph,
-        ),
-        path="/ag-ui",
-    )
     try:
         yield
     finally:
@@ -44,6 +35,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Pinechat API", version="0.1.0", lifespan=lifespan)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.post("/threads")
