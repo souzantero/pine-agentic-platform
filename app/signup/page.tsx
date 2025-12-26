@@ -44,7 +44,8 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/");
+    // Novo usuário não tem organização, vai para onboarding
+    router.push("/onboarding");
   };
 
   return (

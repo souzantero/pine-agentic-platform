@@ -16,7 +16,7 @@ interface ConversationWithMessages extends Conversation {
 
 export default function Home() {
   const router = useRouter();
-  const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn, isLoading, hasOrganization } = useAuth();
   const [conversations, setConversations] = useState<ConversationWithMessages[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -24,10 +24,14 @@ export default function Home() {
   const [settingsExpanded, setSettingsExpanded] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      router.push("/login");
+    if (!isLoading) {
+      if (!isLoggedIn) {
+        router.push("/login");
+      } else if (!hasOrganization) {
+        router.push("/onboarding");
+      }
     }
-  }, [isLoading, isLoggedIn, router]);
+  }, [isLoading, isLoggedIn, hasOrganization, router]);
 
   const selectedConversation = conversations.find((c) => c.id === selectedId);
 
@@ -139,7 +143,7 @@ export default function Home() {
     }, 1000);
   };
 
-  if (isLoading || !isLoggedIn) {
+  if (isLoading || !isLoggedIn || !hasOrganization) {
     return null;
   }
 

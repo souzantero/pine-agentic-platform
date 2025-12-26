@@ -13,6 +13,34 @@ datasource db {
   provider = "postgresql"
 }
 
+// Escopo da role (plataforma ou organizacao)
+enum RoleScope {
+  PLATFORM     // Role global da plataforma (organizationId = null)
+  ORGANIZATION // Role especifica de uma organizacao
+}
+
+// Permissoes do sistema (fixas)
+enum Permission {
+  // Conversas
+  CONVERSATIONS_READ
+  CONVERSATIONS_WRITE
+  CONVERSATIONS_DELETE
+  // Agentes
+  AGENTS_READ
+  AGENTS_WRITE
+  AGENTS_DELETE
+  // Membros
+  MEMBERS_READ
+  MEMBERS_INVITE
+  MEMBERS_MANAGE
+  // Roles
+  ROLES_MANAGE
+  // Organizacao
+  ORGANIZATION_MANAGE
+  // Plataforma (para roles de plataforma no futuro)
+  PLATFORM_MANAGE
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -21,5 +49,69 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  memberships OrganizationMember[]
+
   @@map("users")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members OrganizationMember[]
+  roles   Role[]
+
+  @@map("organizations")
+}
+
+// Roles unificadas (plataforma e organizacao)
+model Role {
+  id             String    @id @default(uuid())
+  organizationId String?   @map("organization_id") // null = role de plataforma
+  scope          RoleScope @default(ORGANIZATION)
+  name           String
+  description    String?
+  isSystemRole   Boolean   @default(false) @map("is_system_role")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  organization Organization?      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  permissions  RolePermission[]
+  members      OrganizationMember[]
+
+  @@unique([organizationId, name])
+  @@map("roles")
+}
+
+// Permissoes atribuidas a cada role
+model RolePermission {
+  id         String     @id @default(uuid())
+  roleId     String     @map("role_id")
+  permission Permission
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permission])
+  @@map("role_permissions")
+}
+
+model OrganizationMember {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  organizationId String   @map("organization_id")
+  roleId         String   @map("role_id")
+  isOwner        Boolean  @default(false) @map("is_owner")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@map("organization_members")
 }
