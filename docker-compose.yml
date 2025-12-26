@@ -2,19 +2,12 @@ volumes:
     pinechat-data:
         driver: local
 services:
-    pinechat-redis:
-        image: redis:6
-        healthcheck:
-            test: redis-cli ping
-            interval: 5s
-            timeout: 1s
-            retries: 5
     pinechat-postgres:
         image: postgres:16
         ports:
             - "5432:5432"
         environment:
-            POSTGRES_DB: pinechat
+            POSTGRES_DB: pinechat_db
             POSTGRES_USER: postgres
             POSTGRES_PASSWORD: postgres
         volumes:
