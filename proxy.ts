@@ -7,12 +7,16 @@ const PUBLIC_ROUTES = ["/login", "/signup"];
 // Rotas de API publicas
 const PUBLIC_API_ROUTES = ["/api/auth/login", "/api/auth/register"];
 
+// Rotas de API que precisam apenas de auth (sem org)
+const AUTH_ONLY_API_ROUTES = ["/api/organizations"];
+
 // Rotas que precisam apenas de autenticacao (sem org)
 const AUTH_ONLY_ROUTES = ["/onboarding"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const session = request.cookies.get("session");
+  const currentOrg = request.cookies.get("current_org");
 
   // Permitir rotas publicas
   if (PUBLIC_ROUTES.some((route) => pathname === route)) {
@@ -25,6 +29,14 @@ export function proxy(request: NextRequest) {
 
   // Permitir APIs publicas
   if (PUBLIC_API_ROUTES.some((route) => pathname.startsWith(route))) {
+    return NextResponse.next();
+  }
+
+  // APIs que precisam apenas de auth (sem org)
+  if (AUTH_ONLY_API_ROUTES.some((route) => pathname.startsWith(route))) {
+    if (!session?.value) {
+      return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    }
     return NextResponse.next();
   }
 
@@ -47,11 +59,18 @@ export function proxy(request: NextRequest) {
 
   // Rotas que precisam apenas de auth (sem verificar org)
   if (AUTH_ONLY_ROUTES.some((route) => pathname.startsWith(route))) {
+    // Se ja tem org, redirecionar para home
+    if (currentOrg?.value) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
     return NextResponse.next();
   }
 
-  // Para todas as outras rotas, usuario esta autenticado
-  // A verificacao de organizacao e feita no client-side
+  // Para rotas protegidas, verificar se tem org ativa
+  if (!currentOrg?.value) {
+    return NextResponse.redirect(new URL("/onboarding", request.url));
+  }
+
   return NextResponse.next();
 }
 

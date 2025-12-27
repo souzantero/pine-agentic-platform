@@ -23,6 +23,7 @@ export async function GET() {
             id: true,
             isOwner: true,
             createdAt: true,
+            organizationId: true,
             organization: {
               select: {
                 id: true,
@@ -62,6 +63,7 @@ export async function GET() {
       id: m.id,
       isOwner: m.isOwner,
       createdAt: m.createdAt,
+      organizationId: m.organizationId,
       organization: m.organization,
       role: {
         id: m.role.id,

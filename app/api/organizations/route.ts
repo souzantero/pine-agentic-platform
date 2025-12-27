@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { Permission, RoleScope } from "@/lib/generated/prisma/client";
 import { validateSession, authError } from "@/lib/api-auth";
+
+const CURRENT_ORG_COOKIE = "current_org";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 ano
 
 // Permissões padrão para cada role de sistema
 const SYSTEM_ROLES = {
@@ -146,6 +150,16 @@ export async function POST(request: NextRequest) {
       });
 
       return { organization, membership };
+    });
+
+    // Definir a nova org como ativa
+    const cookieStore = await cookies();
+    cookieStore.set(CURRENT_ORG_COOKIE, result.organization.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: COOKIE_MAX_AGE,
+      path: "/",
     });
 
     return NextResponse.json({

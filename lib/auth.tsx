@@ -53,6 +53,7 @@ export interface Membership {
   id: string;
   isOwner: boolean;
   createdAt: string;
+  organizationId: string;
   organization: Organization;
   role: Role;
 }
@@ -75,6 +76,7 @@ interface AuthContextType {
     name: string,
     slug: string
   ) => Promise<{ error?: string; organization?: Organization }>;
+  switchOrganization: (organizationId: string) => Promise<{ error?: string }>;
   refreshSession: () => Promise<void>;
   hasPermission: (permission: Permission) => boolean;
 }
@@ -84,14 +86,27 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadSession = useCallback(async () => {
     try {
-      const response = await fetch("/api/auth/me");
-      const data = await response.json();
-      setUser(data.user);
-      setMemberships(data.memberships || []);
+      // Carregar sessão e org ativa em paralelo
+      const [sessionRes, currentOrgRes] = await Promise.all([
+        fetch("/api/auth/me"),
+        fetch("/api/organizations/current"),
+      ]);
+
+      const sessionData = await sessionRes.json();
+      setUser(sessionData.user);
+      setMemberships(sessionData.memberships || []);
+
+      if (currentOrgRes.ok) {
+        const currentOrgData = await currentOrgRes.json();
+        if (currentOrgData.currentOrganization) {
+          setCurrentOrgId(currentOrgData.currentOrganization.organizationId);
+        }
+      }
     } catch (error) {
       console.error("Failed to load session:", error);
     } finally {
@@ -202,8 +217,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loadSession();
   }, [loadSession]);
 
-  // Primeira membership como "atual" (por enquanto)
-  const currentMembership = memberships.length > 0 ? memberships[0] : null;
+  const switchOrganization = useCallback(
+    async (organizationId: string): Promise<{ error?: string }> => {
+      try {
+        const response = await fetch("/api/organizations/current", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ organizationId }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          return { error: data.error };
+        }
+
+        setCurrentOrgId(organizationId);
+        return {};
+      } catch (error) {
+        console.error("Switch organization error:", error);
+        return { error: "Erro ao trocar organização" };
+      }
+    },
+    []
+  );
+
+  // Encontrar membership atual baseado no currentOrgId
+  const currentMembership = memberships.find(
+    (m) => m.organizationId === currentOrgId
+  ) ?? memberships[0] ?? null;
+
   const hasOrganization = memberships.length > 0;
 
   // Verificar se o usuário tem uma permissão específica na org atual
@@ -230,6 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signOut,
         createOrganization,
+        switchOrganization,
         refreshSession,
         hasPermission,
       }}
