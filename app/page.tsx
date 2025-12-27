@@ -1,27 +1,67 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { Header } from "@/components/header";
-import { Sidebar, MobileSidebar, type Conversation } from "@/components/sidebar";
+import { Sidebar, MobileSidebar, type Thread } from "@/components/sidebar";
 import { ChatArea, type Message } from "@/components/chat-area";
 import { ChatSettings, MobileChatSettings, type AIModel } from "@/components/chat-settings";
 
-interface ConversationWithMessages extends Conversation {
+interface ThreadWithMessages extends Thread {
   messages: Message[];
   model: AIModel;
   temperature: number;
 }
 
+// Tipo da resposta da API de threads
+interface ApiThread {
+  id: string;
+  title: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: {
+    id: string;
+    user: {
+      id: string;
+      name: string;
+    };
+  };
+}
+
 export default function Home() {
   const router = useRouter();
   const { isLoggedIn, isLoading, hasOrganization } = useAuth();
-  const [conversations, setConversations] = useState<ConversationWithMessages[]>([]);
+  const [threads, setThreads] = useState<ThreadWithMessages[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(true);
+  const [isLoadingThreads, setIsLoadingThreads] = useState(true);
+
+  // Carregar threads da API
+  const loadThreads = useCallback(async () => {
+    try {
+      const response = await fetch("/api/threads");
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const loadedThreads: ThreadWithMessages[] = data.threads.map((t: ApiThread) => ({
+        id: t.id,
+        title: t.title || "Nova conversa",
+        updatedAt: new Date(t.updatedAt),
+        messages: [], // Mensagens serao carregadas quando implementarmos a API
+        model: "gpt-4" as AIModel,
+        temperature: 0.7,
+      }));
+
+      setThreads(loadedThreads);
+    } catch (error) {
+      console.error("Erro ao carregar threads:", error);
+    } finally {
+      setIsLoadingThreads(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!isLoading) {
@@ -29,64 +69,101 @@ export default function Home() {
         router.push("/login");
       } else if (!hasOrganization) {
         router.push("/onboarding");
+      } else {
+        loadThreads();
       }
     }
-  }, [isLoading, isLoggedIn, hasOrganization, router]);
+  }, [isLoading, isLoggedIn, hasOrganization, router, loadThreads]);
 
-  const selectedConversation = conversations.find((c) => c.id === selectedId);
+  const selectedThread = threads.find((t) => t.id === selectedId);
 
-  const handleNewChat = () => {
-    const newConversation: ConversationWithMessages = {
-      id: crypto.randomUUID(),
-      title: "Nova conversa",
-      updatedAt: new Date(),
-      messages: [],
-      model: "gpt-4",
-      temperature: 0.7,
-    };
-    setConversations((prev) => [newConversation, ...prev]);
-    setSelectedId(newConversation.id);
+  const handleNewChat = async () => {
+    try {
+      const response = await fetch("/api/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        console.error("Erro ao criar thread");
+        return;
+      }
+
+      const data = await response.json();
+      const newThread: ThreadWithMessages = {
+        id: data.thread.id,
+        title: data.thread.title || "Nova conversa",
+        updatedAt: new Date(data.thread.updatedAt),
+        messages: [],
+        model: "gpt-4",
+        temperature: 0.7,
+      };
+
+      setThreads((prev) => [newThread, ...prev]);
+      setSelectedId(newThread.id);
+    } catch (error) {
+      console.error("Erro ao criar thread:", error);
+    }
   };
 
   const handleModelChange = (model: AIModel) => {
     if (!selectedId) return;
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.id === selectedId ? { ...conv, model } : conv
+    setThreads((prev) =>
+      prev.map((thread) =>
+        thread.id === selectedId ? { ...thread, model } : thread
       )
     );
   };
 
   const handleTemperatureChange = (temperature: number) => {
     if (!selectedId) return;
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.id === selectedId ? { ...conv, temperature } : conv
+    setThreads((prev) =>
+      prev.map((thread) =>
+        thread.id === selectedId ? { ...thread, temperature } : thread
       )
     );
   };
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
     if (!selectedId) {
-      const newId = crypto.randomUUID();
-      const userMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content,
-        createdAt: new Date(),
-      };
-      const newConversation: ConversationWithMessages = {
-        id: newId,
-        title: content.slice(0, 30) + (content.length > 30 ? "..." : ""),
-        updatedAt: new Date(),
-        messages: [userMessage],
-        model: "gpt-4",
-        temperature: 0.7,
-      };
-      setConversations((prev) => [newConversation, ...prev]);
-      setSelectedId(newId);
+      // Criar thread via API quando nao houver thread selecionada
+      try {
+        const title = content.slice(0, 30) + (content.length > 30 ? "..." : "");
+        const response = await fetch("/api/threads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title }),
+        });
 
-      simulateResponse(newId);
+        if (!response.ok) {
+          console.error("Erro ao criar thread");
+          return;
+        }
+
+        const data = await response.json();
+        const userMessage: Message = {
+          id: crypto.randomUUID(),
+          role: "user",
+          content,
+          createdAt: new Date(),
+        };
+
+        const newThread: ThreadWithMessages = {
+          id: data.thread.id,
+          title: data.thread.title || title,
+          updatedAt: new Date(data.thread.updatedAt),
+          messages: [userMessage],
+          model: "gpt-4",
+          temperature: 0.7,
+        };
+
+        setThreads((prev) => [newThread, ...prev]);
+        setSelectedId(newThread.id);
+        simulateResponse(newThread.id);
+      } catch (error) {
+        console.error("Erro ao criar thread:", error);
+      }
       return;
     }
 
@@ -97,30 +174,30 @@ export default function Home() {
       createdAt: new Date(),
     };
 
-    setConversations((prev) =>
-      prev.map((conv) => {
-        if (conv.id === selectedId) {
-          const isFirstMessage = conv.messages.length === 0;
+    setThreads((prev) =>
+      prev.map((thread) => {
+        if (thread.id === selectedId) {
+          const isFirstMessage = thread.messages.length === 0;
           return {
-            ...conv,
+            ...thread,
             title: isFirstMessage
               ? content.slice(0, 30) + (content.length > 30 ? "..." : "")
-              : conv.title,
+              : thread.title,
             updatedAt: new Date(),
-            messages: [...conv.messages, userMessage],
+            messages: [...thread.messages, userMessage],
           };
         }
-        return conv;
+        return thread;
       })
     );
 
     simulateResponse(selectedId);
   };
 
-  const simulateResponse = (conversationId: string) => {
+  const simulateResponse = (threadId: string) => {
     setTimeout(() => {
-      const conv = conversations.find((c) => c.id === conversationId);
-      const modelName = conv?.model ?? "IA";
+      const thread = threads.find((t) => t.id === threadId);
+      const modelName = thread?.model ?? "IA";
 
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
@@ -129,26 +206,26 @@ export default function Home() {
         createdAt: new Date(),
       };
 
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (c.id === conversationId) {
+      setThreads((prev) =>
+        prev.map((t) => {
+          if (t.id === threadId) {
             return {
-              ...c,
-              messages: [...c.messages, assistantMessage],
+              ...t,
+              messages: [...t.messages, assistantMessage],
             };
           }
-          return c;
+          return t;
         })
       );
     }, 1000);
   };
 
-  if (isLoading || !isLoggedIn || !hasOrganization) {
+  if (isLoading || isLoadingThreads || !isLoggedIn || !hasOrganization) {
     return null;
   }
 
   const sidebarProps = {
-    conversations,
+    threads,
     selectedId,
     onSelect: setSelectedId,
     onNewChat: handleNewChat,
@@ -159,7 +236,7 @@ export default function Home() {
       <Header
         onMenuClick={() => setMobileMenuOpen(true)}
         onSettingsClick={() => setMobileSettingsOpen(true)}
-        showSettingsButton={!!selectedConversation}
+        showSettingsButton={!!selectedThread}
       />
 
       {/* Mobile Sidebar */}
@@ -175,19 +252,19 @@ export default function Home() {
 
         <main className="flex-1 overflow-hidden">
           <ChatArea
-            messages={selectedConversation?.messages ?? []}
+            messages={selectedThread?.messages ?? []}
             onSendMessage={handleSendMessage}
-            disabled={!selectedConversation}
+            disabled={!selectedThread}
           />
         </main>
 
         {/* Settings Panel - Desktop only */}
-        {selectedConversation && (
+        {selectedThread && (
           <div className="hidden lg:flex h-full">
             <ChatSettings
-              model={selectedConversation.model}
+              model={selectedThread.model}
               onModelChange={handleModelChange}
-              temperature={selectedConversation.temperature}
+              temperature={selectedThread.temperature}
               onTemperatureChange={handleTemperatureChange}
               expanded={settingsExpanded}
               onExpandedChange={setSettingsExpanded}
@@ -197,11 +274,11 @@ export default function Home() {
       </div>
 
       {/* Mobile Settings */}
-      {selectedConversation && (
+      {selectedThread && (
         <MobileChatSettings
-          model={selectedConversation.model}
+          model={selectedThread.model}
           onModelChange={handleModelChange}
-          temperature={selectedConversation.temperature}
+          temperature={selectedThread.temperature}
           onTemperatureChange={handleTemperatureChange}
           open={mobileSettingsOpen}
           onOpenChange={setMobileSettingsOpen}

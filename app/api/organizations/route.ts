@@ -16,9 +16,9 @@ const SYSTEM_ROLES = {
   Admin: {
     description: "Administrador com permissões de gerenciamento",
     permissions: [
-      Permission.CONVERSATIONS_READ,
-      Permission.CONVERSATIONS_WRITE,
-      Permission.CONVERSATIONS_DELETE,
+      Permission.THREADS_READ,
+      Permission.THREADS_WRITE,
+      Permission.THREADS_DELETE,
       Permission.AGENTS_READ,
       Permission.AGENTS_WRITE,
       Permission.AGENTS_DELETE,
@@ -32,8 +32,8 @@ const SYSTEM_ROLES = {
   Member: {
     description: "Membro com permissões básicas",
     permissions: [
-      Permission.CONVERSATIONS_READ,
-      Permission.CONVERSATIONS_WRITE,
+      Permission.THREADS_READ,
+      Permission.THREADS_WRITE,
       Permission.AGENTS_READ,
       Permission.MEMBERS_READ,
     ],

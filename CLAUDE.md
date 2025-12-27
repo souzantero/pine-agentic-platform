@@ -34,7 +34,7 @@ docker-compose up -d  # Start PostgreSQL container
 The app implements role-based access control with organization scoping:
 
 - **Users** can belong to multiple **Organizations** with different **Roles**
-- **Roles** contain **RolePermissions** (fixed enum: CONVERSATIONS_*, AGENTS_*, MEMBERS_*, ROLES_*, ORGANIZATION_MANAGE, PLATFORM_MANAGE)
+- **Roles** contain **RolePermissions** (fixed enum: THREADS_*, AGENTS_*, MEMBERS_*, ROLES_*, ORGANIZATION_MANAGE, PLATFORM_MANAGE)
 - Platform roles (null organizationId) vs Organization-scoped roles
 
 ### Authentication Flow
@@ -59,6 +59,7 @@ All API routes are in `/app/api/`:
 - `/members/*` - List, invite, remove members
 - `/invites/*` - Create and accept invites
 - `/roles/*` - List roles
+- `/threads/*` - Create and list conversation threads
 
 API routes use `validateSession()` or `validatePermission()` from lib/api-auth.ts.
 

@@ -18,9 +18,9 @@ export interface User {
 }
 
 export type Permission =
-  | "CONVERSATIONS_READ"
-  | "CONVERSATIONS_WRITE"
-  | "CONVERSATIONS_DELETE"
+  | "THREADS_READ"
+  | "THREADS_WRITE"
+  | "THREADS_DELETE"
   | "AGENTS_READ"
   | "AGENTS_WRITE"
   | "AGENTS_DELETE"

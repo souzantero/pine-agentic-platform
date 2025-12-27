@@ -14,16 +14,16 @@ import {
 } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
 
-export interface Conversation {
+export interface Thread {
   id: string;
   title: string;
   updatedAt: Date;
 }
 
-type NavSection = "conversations" | "members";
+type NavSection = "threads" | "members";
 
 interface SidebarProps {
-  conversations: Conversation[];
+  threads: Thread[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onNewChat: () => void;
@@ -36,7 +36,7 @@ interface MobileSidebarProps extends SidebarProps {
 
 // Conteúdo compartilhado da sidebar
 function SidebarContent({
-  conversations,
+  threads,
   selectedId,
   onSelect,
   onNewChat,
@@ -47,7 +47,7 @@ function SidebarContent({
   const router = useRouter();
   const { hasPermission } = useAuth();
   const [menuExpanded, setMenuExpanded] = useState(true);
-  const [activeSection, setActiveSection] = useState<NavSection>("conversations");
+  const [activeSection, setActiveSection] = useState<NavSection>("threads");
 
   const canViewMembers = hasPermission("MEMBERS_READ");
   const canManageOrg = hasPermission("ORGANIZATION_MANAGE");
@@ -102,12 +102,12 @@ function SidebarContent({
           <ul className="space-y-2">
             <li>
               <button
-                onClick={() => setActiveSection("conversations")}
+                onClick={() => setActiveSection("threads")}
                 title={!menuExpanded ? "Conversas" : undefined}
                 className={cn(
                   "w-full flex items-center rounded-md transition-colors",
                   menuExpanded ? "gap-3 px-3 py-2" : "justify-center p-2",
-                  activeSection === "conversations"
+                  activeSection === "threads"
                     ? "bg-primary text-primary-foreground"
                     : "hover:bg-muted"
                 )}
@@ -152,7 +152,7 @@ function SidebarContent({
         </nav>
       </aside>
 
-      {/* Submenu - Lista de conversas */}
+      {/* Submenu - Lista de threads */}
       <aside className="w-56 border-r bg-muted/40 flex flex-col">
         <div className={cn("p-2", isMobile && "pt-12")}>
           <Button
@@ -170,24 +170,24 @@ function SidebarContent({
         <ScrollArea className="flex-1">
           <nav className="p-2">
             <ul className="space-y-1">
-              {conversations.length === 0 ? (
+              {threads.length === 0 ? (
                 <li className="px-3 py-2 text-sm text-muted-foreground">
                   Nenhuma conversa
                 </li>
               ) : (
-                conversations.map((conv) => (
-                  <li key={conv.id}>
+                threads.map((thread) => (
+                  <li key={thread.id}>
                     <button
-                      onClick={() => handleSelect(conv.id)}
+                      onClick={() => handleSelect(thread.id)}
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left",
-                        selectedId === conv.id
+                        selectedId === thread.id
                           ? "bg-primary text-primary-foreground"
                           : "hover:bg-muted"
                       )}
                     >
                       <MessageSquare className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{conv.title}</span>
+                      <span className="truncate">{thread.title}</span>
                     </button>
                   </li>
                 ))

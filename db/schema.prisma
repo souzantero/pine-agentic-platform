@@ -21,10 +21,10 @@ enum RoleScope {
 
 // Permissoes do sistema (fixas)
 enum Permission {
-  // Conversas
-  CONVERSATIONS_READ
-  CONVERSATIONS_WRITE
-  CONVERSATIONS_DELETE
+  // Threads
+  THREADS_READ
+  THREADS_WRITE
+  THREADS_DELETE
   // Agentes
   AGENTS_READ
   AGENTS_WRITE
@@ -67,6 +67,7 @@ model Organization {
   members OrganizationMember[]
   roles   Role[]
   invites OrganizationInvite[]
+  threads Thread[]
 
   @@map("organizations")
 }
@@ -116,9 +117,25 @@ model OrganizationMember {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   role         Role         @relation(fields: [roleId], references: [id])
+  threads      Thread[]
 
   @@unique([userId, organizationId])
   @@map("organization_members")
+}
+
+// Threads de conversa
+model Thread {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  createdById    String   @map("created_by_id")
+  title          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    OrganizationMember @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@map("threads")
 }
 
 // Convites para organizacao
