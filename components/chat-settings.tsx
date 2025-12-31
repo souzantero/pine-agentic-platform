@@ -21,6 +21,12 @@ import {
 
 export type AIModel = "gpt-4" | "gpt-3.5" | "claude-3" | "claude-2" | "gemini-pro" | "gemini-flash";
 
+export interface SystemPrompt {
+  id: string;
+  name: string;
+  content: string;
+}
+
 interface ModelOption {
   value: AIModel;
   label: string;
@@ -41,10 +47,13 @@ interface SettingsContentProps {
   onModelChange: (model: AIModel) => void;
   temperature: number;
   onTemperatureChange: (temperature: number) => void;
+  systemPrompts: SystemPrompt[];
+  selectedPromptId: string | null;
+  onPromptChange: (promptId: string | null) => void;
 }
 
 // Conteúdo compartilhado das configurações
-function SettingsContent({ model, onModelChange, temperature, onTemperatureChange }: SettingsContentProps) {
+function SettingsContent({ model, onModelChange, temperature, onTemperatureChange, systemPrompts, selectedPromptId, onPromptChange }: SettingsContentProps) {
   return (
     <div className="p-4 space-y-4">
       <div className="space-y-2">
@@ -85,6 +94,31 @@ function SettingsContent({ model, onModelChange, temperature, onTemperatureChang
           Valores baixos = respostas mais focadas. Valores altos = mais criatividade.
         </p>
       </div>
+
+      <Separator />
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium">System Prompt</label>
+        <Select
+          value={selectedPromptId ?? "none"}
+          onValueChange={(value) => onPromptChange(value === "none" ? null : value)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Selecione um prompt" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Nenhum</SelectItem>
+            {systemPrompts.map((prompt) => (
+              <SelectItem key={prompt.id} value={prompt.id}>
+                {prompt.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          Define o comportamento e contexto inicial do assistente.
+        </p>
+      </div>
     </div>
   );
 }
@@ -95,7 +129,7 @@ interface ChatSettingsProps extends SettingsContentProps {
 }
 
 // Desktop Settings Panel
-export function ChatSettings({ model, onModelChange, temperature, onTemperatureChange, expanded, onExpandedChange }: ChatSettingsProps) {
+export function ChatSettings({ model, onModelChange, temperature, onTemperatureChange, systemPrompts, selectedPromptId, onPromptChange, expanded, onExpandedChange }: ChatSettingsProps) {
   return (
     <aside
       className={cn(
@@ -125,12 +159,15 @@ export function ChatSettings({ model, onModelChange, temperature, onTemperatureC
       </div>
 
       {expanded && (
-        <div className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <SettingsContent
             model={model}
             onModelChange={onModelChange}
             temperature={temperature}
             onTemperatureChange={onTemperatureChange}
+            systemPrompts={systemPrompts}
+            selectedPromptId={selectedPromptId}
+            onPromptChange={onPromptChange}
           />
         </div>
       )}
@@ -157,7 +194,7 @@ interface MobileChatSettingsProps extends SettingsContentProps {
 }
 
 // Mobile Settings (Sheet/Drawer)
-export function MobileChatSettings({ model, onModelChange, temperature, onTemperatureChange, open, onOpenChange }: MobileChatSettingsProps) {
+export function MobileChatSettings({ model, onModelChange, temperature, onTemperatureChange, systemPrompts, selectedPromptId, onPromptChange, open, onOpenChange }: MobileChatSettingsProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-72">
@@ -172,6 +209,9 @@ export function MobileChatSettings({ model, onModelChange, temperature, onTemper
           onModelChange={onModelChange}
           temperature={temperature}
           onTemperatureChange={onTemperatureChange}
+          systemPrompts={systemPrompts}
+          selectedPromptId={selectedPromptId}
+          onPromptChange={onPromptChange}
         />
       </SheetContent>
     </Sheet>

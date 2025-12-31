@@ -6,12 +6,13 @@ import { useAuth } from "@/lib/auth";
 import { Header } from "@/components/header";
 import { Sidebar, MobileSidebar, MobileThreadsDrawer, type Thread } from "@/components/sidebar";
 import { ChatArea, type Message } from "@/components/chat-area";
-import { ChatSettings, MobileChatSettings, type AIModel } from "@/components/chat-settings";
+import { ChatSettings, MobileChatSettings, type AIModel, type SystemPrompt } from "@/components/chat-settings";
 
 interface ThreadWithMessages extends Thread {
   messages: Message[];
   model: AIModel;
   temperature: number;
+  systemPromptId: string | null;
 }
 
 // Tipo da resposta da API de threads
@@ -39,6 +40,7 @@ export default function Home() {
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const [settingsExpanded, setSettingsExpanded] = useState(true);
   const [isLoadingThreads, setIsLoadingThreads] = useState(true);
+  const [systemPrompts, setSystemPrompts] = useState<SystemPrompt[]>([]);
 
   // Carregar threads da API
   const loadThreads = useCallback(async () => {
@@ -54,6 +56,7 @@ export default function Home() {
         messages: [], // Mensagens serao carregadas quando implementarmos a API
         model: "gpt-4" as AIModel,
         temperature: 0.7,
+        systemPromptId: null,
       }));
 
       setThreads(loadedThreads);
@@ -61,6 +64,28 @@ export default function Home() {
       console.error("Erro ao carregar threads:", error);
     } finally {
       setIsLoadingThreads(false);
+    }
+  }, []);
+
+  // Carregar prompts da API
+  const loadPrompts = useCallback(async () => {
+    try {
+      const response = await fetch("/api/prompts");
+      if (!response.ok) return;
+
+      const data = await response.json();
+      // Filtrar apenas prompts com role SYSTEM
+      const prompts: SystemPrompt[] = data.prompts
+        .filter((p: { role: string }) => p.role === "SYSTEM")
+        .map((p: { id: string; name: string; content: string }) => ({
+          id: p.id,
+          name: p.name,
+          content: p.content,
+        }));
+
+      setSystemPrompts(prompts);
+    } catch (error) {
+      console.error("Erro ao carregar prompts:", error);
     }
   }, []);
 
@@ -72,9 +97,10 @@ export default function Home() {
         router.push("/onboarding");
       } else {
         loadThreads();
+        loadPrompts();
       }
     }
-  }, [isLoading, isLoggedIn, hasOrganization, router, loadThreads]);
+  }, [isLoading, isLoggedIn, hasOrganization, router, loadThreads, loadPrompts]);
 
   const selectedThread = threads.find((t) => t.id === selectedId);
 
@@ -99,6 +125,7 @@ export default function Home() {
         messages: [],
         model: "gpt-4",
         temperature: 0.7,
+        systemPromptId: null,
       };
 
       setThreads((prev) => [newThread, ...prev]);
@@ -122,6 +149,15 @@ export default function Home() {
     setThreads((prev) =>
       prev.map((thread) =>
         thread.id === selectedId ? { ...thread, temperature } : thread
+      )
+    );
+  };
+
+  const handlePromptChange = (promptId: string | null) => {
+    if (!selectedId) return;
+    setThreads((prev) =>
+      prev.map((thread) =>
+        thread.id === selectedId ? { ...thread, systemPromptId: promptId } : thread
       )
     );
   };
@@ -157,6 +193,7 @@ export default function Home() {
           messages: [userMessage],
           model: "gpt-4",
           temperature: 0.7,
+          systemPromptId: null,
         };
 
         setThreads((prev) => [newThread, ...prev]);
@@ -277,6 +314,9 @@ export default function Home() {
               onModelChange={handleModelChange}
               temperature={selectedThread.temperature}
               onTemperatureChange={handleTemperatureChange}
+              systemPrompts={systemPrompts}
+              selectedPromptId={selectedThread.systemPromptId}
+              onPromptChange={handlePromptChange}
               expanded={settingsExpanded}
               onExpandedChange={setSettingsExpanded}
             />
@@ -291,6 +331,9 @@ export default function Home() {
           onModelChange={handleModelChange}
           temperature={selectedThread.temperature}
           onTemperatureChange={handleTemperatureChange}
+          systemPrompts={systemPrompts}
+          selectedPromptId={selectedThread.systemPromptId}
+          onPromptChange={handlePromptChange}
           open={mobileSettingsOpen}
           onOpenChange={setMobileSettingsOpen}
         />

@@ -108,14 +108,12 @@ function EditPromptForm({
 
         <div className="space-y-2">
           <Label htmlFor="edit-role">Role</Label>
-          <Select value={role} onValueChange={setRole}>
+          <Select value={role} onValueChange={setRole} disabled>
             <SelectTrigger>
               <SelectValue placeholder="Selecione a role" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="SYSTEM">Sistema</SelectItem>
-              <SelectItem value="USER">Usuário</SelectItem>
-              <SelectItem value="ASSISTANT">Assistente</SelectItem>
             </SelectContent>
           </Select>
         </div>
