@@ -7,12 +7,13 @@ import { Header } from "@/components/header";
 import { Sidebar, MobileSidebar, MobileThreadsDrawer, type Thread } from "@/components/sidebar";
 import { ChatArea, type Message } from "@/components/chat-area";
 import { ChatSettings, MobileChatSettings, type SystemPrompt, type ModelOption } from "@/components/chat-settings";
+import { getDefaultAgentId, getDefaultConfig } from "@/lib/agents";
+import type { AgentConfig } from "@/lib/agents";
 
 interface ThreadWithMessages extends Thread {
   messages: Message[];
-  model: string;
-  temperature: number;
-  systemPromptId: string | null;
+  agentId: string;
+  agentConfig: AgentConfig;
 }
 
 // Tipo da resposta da API de threads
@@ -52,14 +53,14 @@ export default function Home() {
       if (!response.ok) return;
 
       const data = await response.json();
+      const defaultAgentId = getDefaultAgentId();
       const loadedThreads: ThreadWithMessages[] = data.threads.map((t: ApiThread) => ({
         id: t.id,
         title: t.title || "Nova conversa",
         updatedAt: new Date(t.updatedAt),
         messages: [], // Mensagens serao carregadas quando implementarmos a API
-        model: "",
-        temperature: 0.7,
-        systemPromptId: null,
+        agentId: defaultAgentId,
+        agentConfig: getDefaultConfig(defaultAgentId),
       }));
 
       setThreads(loadedThreads);
@@ -138,14 +139,14 @@ export default function Home() {
       }
 
       const data = await response.json();
+      const defaultAgentId = getDefaultAgentId();
       const newThread: ThreadWithMessages = {
         id: data.thread.id,
         title: data.thread.title || "Nova conversa",
         updatedAt: new Date(data.thread.updatedAt),
         messages: [],
-        model: "",
-        temperature: 0.7,
-        systemPromptId: null,
+        agentId: defaultAgentId,
+        agentConfig: getDefaultConfig(defaultAgentId),
       };
 
       setThreads((prev) => [newThread, ...prev]);
@@ -155,29 +156,27 @@ export default function Home() {
     }
   };
 
-  const handleModelChange = (model: string) => {
+  const handleAgentChange = (agentId: string) => {
     if (!selectedId) return;
     setThreads((prev) =>
       prev.map((thread) =>
-        thread.id === selectedId ? { ...thread, model } : thread
+        thread.id === selectedId
+          ? { ...thread, agentId, agentConfig: getDefaultConfig(agentId) }
+          : thread
       )
     );
   };
 
-  const handleTemperatureChange = (temperature: number) => {
+  const handleAgentConfigChange = (key: string, value: unknown) => {
     if (!selectedId) return;
     setThreads((prev) =>
       prev.map((thread) =>
-        thread.id === selectedId ? { ...thread, temperature } : thread
-      )
-    );
-  };
-
-  const handlePromptChange = (promptId: string | null) => {
-    if (!selectedId) return;
-    setThreads((prev) =>
-      prev.map((thread) =>
-        thread.id === selectedId ? { ...thread, systemPromptId: promptId } : thread
+        thread.id === selectedId
+          ? {
+              ...thread,
+              agentConfig: { ...thread.agentConfig, [key]: value },
+            }
+          : thread
       )
     );
   };
@@ -187,11 +186,7 @@ export default function Home() {
     loadModels(provider);
     // Limpar modelo selecionado na thread atual quando muda o provedor
     if (selectedId) {
-      setThreads((prev) =>
-        prev.map((thread) =>
-          thread.id === selectedId ? { ...thread, model: "" } : thread
-        )
-      );
+      handleAgentConfigChange("model", "");
     }
   };
 
@@ -219,14 +214,14 @@ export default function Home() {
           createdAt: new Date(),
         };
 
+        const defaultAgentId = getDefaultAgentId();
         const newThread: ThreadWithMessages = {
           id: data.thread.id,
           title: data.thread.title || title,
           updatedAt: new Date(data.thread.updatedAt),
           messages: [userMessage],
-          model: "",
-          temperature: 0.7,
-          systemPromptId: null,
+          agentId: defaultAgentId,
+          agentConfig: getDefaultConfig(defaultAgentId),
         };
 
         setThreads((prev) => [newThread, ...prev]);
@@ -268,12 +263,12 @@ export default function Home() {
   const simulateResponse = (threadId: string) => {
     setTimeout(() => {
       const thread = threads.find((t) => t.id === threadId);
-      const modelName = thread?.model ?? "IA";
+      const modelName = (thread?.agentConfig as Record<string, unknown>)?.model as string ?? "IA";
 
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: `Resposta simulada usando ${modelName}. Em breve, será integrado com o agente de IA.`,
+        content: `Resposta simulada usando ${modelName || "agente"}. Em breve, será integrado com o agente de IA.`,
         createdAt: new Date(),
       };
 
@@ -336,6 +331,8 @@ export default function Home() {
             messages={selectedThread?.messages ?? []}
             onSendMessage={handleSendMessage}
             disabled={!selectedThread}
+            selectedAgentId={selectedThread?.agentId ?? getDefaultAgentId()}
+            onAgentChange={handleAgentChange}
           />
         </main>
 
@@ -343,14 +340,11 @@ export default function Home() {
         {selectedThread && (
           <div className="hidden lg:flex h-full">
             <ChatSettings
-              model={selectedThread.model}
-              onModelChange={handleModelChange}
-              temperature={selectedThread.temperature}
-              onTemperatureChange={handleTemperatureChange}
+              agentId={selectedThread.agentId}
+              agentConfig={selectedThread.agentConfig as Record<string, unknown>}
+              onConfigChange={handleAgentConfigChange}
               availableModels={availableModels}
               systemPrompts={systemPrompts}
-              selectedPromptId={selectedThread.systemPromptId}
-              onPromptChange={handlePromptChange}
               selectedProvider={selectedProvider}
               configuredProviders={configuredProviders}
               onProviderChange={handleProviderChange}
@@ -364,14 +358,11 @@ export default function Home() {
       {/* Mobile Settings */}
       {selectedThread && (
         <MobileChatSettings
-          model={selectedThread.model}
-          onModelChange={handleModelChange}
-          temperature={selectedThread.temperature}
-          onTemperatureChange={handleTemperatureChange}
+          agentId={selectedThread.agentId}
+          agentConfig={selectedThread.agentConfig as Record<string, unknown>}
+          onConfigChange={handleAgentConfigChange}
           availableModels={availableModels}
           systemPrompts={systemPrompts}
-          selectedPromptId={selectedThread.systemPromptId}
-          onPromptChange={handlePromptChange}
           selectedProvider={selectedProvider}
           configuredProviders={configuredProviders}
           onProviderChange={handleProviderChange}

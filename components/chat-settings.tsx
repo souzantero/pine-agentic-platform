@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings, PanelRightClose, PanelRight } from "lucide-react";
+import { Settings, PanelRightClose, PanelRight, Bot, Database, Search, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { getAgent } from "@/lib/agents";
+import type { AgentConfigField } from "@/lib/agents";
+import type { LucideIcon } from "lucide-react";
 
 export interface SystemPrompt {
   id: string;
@@ -44,117 +47,242 @@ const PROVIDER_LABELS: Record<string, string> = {
   GOOGLE: "Google AI",
 };
 
+// Mapeamento de ícones
+const iconMap: Record<string, LucideIcon> = {
+  Bot: Bot,
+  Database: Database,
+  Search: Search,
+  FileText: FileText,
+};
+
 interface SettingsContentProps {
-  model: string;
-  onModelChange: (model: string) => void;
-  temperature: number;
-  onTemperatureChange: (temperature: number) => void;
+  agentId: string;
+  agentConfig: Record<string, unknown>;
+  onConfigChange: (key: string, value: unknown) => void;
   availableModels: ModelOption[];
   systemPrompts: SystemPrompt[];
-  selectedPromptId: string | null;
-  onPromptChange: (promptId: string | null) => void;
   selectedProvider: string | null;
   configuredProviders: string[];
   onProviderChange: (provider: string) => void;
 }
 
-// Conteúdo compartilhado das configurações
-function SettingsContent({ model, onModelChange, temperature, onTemperatureChange, availableModels, systemPrompts, selectedPromptId, onPromptChange, selectedProvider, configuredProviders, onProviderChange }: SettingsContentProps) {
+// Componente para renderizar campo de provedor
+function ProviderField({
+  value,
+  onChange,
+  configuredProviders,
+}: {
+  value: string | null;
+  onChange: (value: string) => void;
+  configuredProviders: string[];
+}) {
+  if (configuredProviders.length === 0) return null;
+
   return (
-    <div className="p-4 space-y-4">
-      {/* Seletor de Provedor */}
-      {configuredProviders.length > 0 && (
-        <>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Provedor</label>
-            <Select value={selectedProvider ?? ""} onValueChange={onProviderChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione um provedor" />
-              </SelectTrigger>
-              <SelectContent>
-                {configuredProviders.map((provider) => (
-                  <SelectItem key={provider} value={provider}>
-                    {PROVIDER_LABELS[provider] || provider}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Separator />
-        </>
-      )}
-
+    <>
       <div className="space-y-2">
-        <label className="text-sm font-medium">Modelo</label>
-        {availableModels.length > 0 ? (
-          <Select value={model} onValueChange={onModelChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione um modelo" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableModels.map((m) => (
-                <SelectItem key={m.id} value={m.id}>
-                  <div className="flex flex-col">
-                    <span>{m.name}</span>
-                    {m.description && (
-                      <span className="text-xs text-muted-foreground">{m.description}</span>
-                    )}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <p className="text-sm text-muted-foreground py-2">
-            Configure um provedor de IA nas configurações da organização
-          </p>
-        )}
-      </div>
-
-      <Separator />
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium">System Prompt</label>
-        <Select
-          value={selectedPromptId ?? "none"}
-          onValueChange={(value) => onPromptChange(value === "none" ? null : value)}
-        >
+        <label className="text-sm font-medium">Provedor</label>
+        <Select value={value ?? ""} onValueChange={onChange}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Selecione um prompt" />
+            <SelectValue placeholder="Selecione um provedor" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">Nenhum</SelectItem>
-            {systemPrompts.map((prompt) => (
-              <SelectItem key={prompt.id} value={prompt.id}>
-                {prompt.name}
+            {configuredProviders.map((provider) => (
+              <SelectItem key={provider} value={provider}>
+                {PROVIDER_LABELS[provider] || provider}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-muted-foreground">
-          Define o comportamento e contexto inicial do assistente.
-        </p>
       </div>
+      <Separator />
+    </>
+  );
+}
 
+// Componente para renderizar campo de modelo
+function ModelField({
+  value,
+  onChange,
+  availableModels,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  availableModels: ModelOption[];
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium">Modelo</label>
+      {availableModels.length > 0 ? (
+        <Select value={value} onValueChange={onChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Selecione um modelo" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableModels.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                <div className="flex flex-col">
+                  <span>{m.name}</span>
+                  {m.description && (
+                    <span className="text-xs text-muted-foreground">{m.description}</span>
+                  )}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : (
+        <p className="text-sm text-muted-foreground py-2">
+          Configure um provedor de IA nas configurações da organização
+        </p>
+      )}
+    </div>
+  );
+}
+
+// Componente para renderizar campo de prompt
+function PromptField({
+  value,
+  onChange,
+  systemPrompts,
+  description,
+}: {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  systemPrompts: SystemPrompt[];
+  description?: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium">System Prompt</label>
+      <Select
+        value={value ?? "none"}
+        onValueChange={(v) => onChange(v === "none" ? null : v)}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Selecione um prompt" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">Nenhum</SelectItem>
+          {systemPrompts.map((prompt) => (
+            <SelectItem key={prompt.id} value={prompt.id}>
+              {prompt.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {description && (
+        <p className="text-xs text-muted-foreground">{description}</p>
+      )}
+    </div>
+  );
+}
+
+// Componente para renderizar campo de temperatura
+function TemperatureField({
+  value,
+  onChange,
+  field,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  field: AgentConfigField;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium">{field.label}</label>
+        <span className="text-sm text-muted-foreground">{value.toFixed(1)}</span>
+      </div>
+      <Slider
+        value={[value]}
+        onValueChange={(v) => onChange(v[0])}
+        min={field.min ?? 0}
+        max={field.max ?? 2}
+        step={field.step ?? 0.1}
+        className="w-full"
+      />
+      {field.description && (
+        <p className="text-xs text-muted-foreground">{field.description}</p>
+      )}
+    </div>
+  );
+}
+
+// Conteúdo compartilhado das configurações
+function SettingsContent({
+  agentId,
+  agentConfig,
+  onConfigChange,
+  availableModels,
+  systemPrompts,
+  selectedProvider,
+  configuredProviders,
+  onProviderChange,
+}: SettingsContentProps) {
+  const agent = getAgent(agentId);
+  const AgentIcon = agent ? iconMap[agent.icon] ?? Bot : Bot;
+
+  if (!agent) {
+    return (
+      <div className="p-4">
+        <p className="text-sm text-muted-foreground">Agente não encontrado</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 space-y-4">
+      {/* Header com info do agente */}
+      <div className="flex items-center gap-2 text-sm">
+        <AgentIcon className="h-4 w-4 text-muted-foreground" />
+        <span className="font-medium">{agent.name}</span>
+      </div>
       <Separator />
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">Temperatura</label>
-          <span className="text-sm text-muted-foreground">{temperature.toFixed(1)}</span>
-        </div>
-        <Slider
-          value={[temperature]}
-          onValueChange={(value) => onTemperatureChange(value[0])}
-          min={0}
-          max={2}
-          step={0.1}
-          className="w-full"
-        />
-        <p className="text-xs text-muted-foreground">
-          Valores baixos = respostas mais focadas. Valores altos = mais criatividade.
-        </p>
-      </div>
+      {/* Renderizar campos baseado no schema do agente */}
+      {agent.configSchema.map((field, index) => {
+        const isLast = index === agent.configSchema.length - 1;
+
+        return (
+          <div key={field.key}>
+            {field.type === "provider" && (
+              <ProviderField
+                value={selectedProvider}
+                onChange={onProviderChange}
+                configuredProviders={configuredProviders}
+              />
+            )}
+
+            {field.type === "model" && (
+              <ModelField
+                value={(agentConfig[field.key] as string) ?? ""}
+                onChange={(value) => onConfigChange(field.key, value)}
+                availableModels={availableModels}
+              />
+            )}
+
+            {field.type === "prompt" && (
+              <PromptField
+                value={(agentConfig[field.key] as string | null) ?? null}
+                onChange={(value) => onConfigChange(field.key, value)}
+                systemPrompts={systemPrompts}
+                description={field.description}
+              />
+            )}
+
+            {field.type === "temperature" && (
+              <TemperatureField
+                value={(agentConfig[field.key] as number) ?? 0.7}
+                onChange={(value) => onConfigChange(field.key, value)}
+                field={field}
+              />
+            )}
+
+            {!isLast && field.type !== "provider" && <Separator className="mt-4" />}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -165,7 +293,18 @@ interface ChatSettingsProps extends SettingsContentProps {
 }
 
 // Desktop Settings Panel
-export function ChatSettings({ model, onModelChange, temperature, onTemperatureChange, availableModels, systemPrompts, selectedPromptId, onPromptChange, selectedProvider, configuredProviders, onProviderChange, expanded, onExpandedChange }: ChatSettingsProps) {
+export function ChatSettings({
+  agentId,
+  agentConfig,
+  onConfigChange,
+  availableModels,
+  systemPrompts,
+  selectedProvider,
+  configuredProviders,
+  onProviderChange,
+  expanded,
+  onExpandedChange,
+}: ChatSettingsProps) {
   return (
     <aside
       className={cn(
@@ -197,14 +336,11 @@ export function ChatSettings({ model, onModelChange, temperature, onTemperatureC
       {expanded && (
         <div className="flex-1 overflow-y-auto">
           <SettingsContent
-            model={model}
-            onModelChange={onModelChange}
-            temperature={temperature}
-            onTemperatureChange={onTemperatureChange}
+            agentId={agentId}
+            agentConfig={agentConfig}
+            onConfigChange={onConfigChange}
             availableModels={availableModels}
             systemPrompts={systemPrompts}
-            selectedPromptId={selectedPromptId}
-            onPromptChange={onPromptChange}
             selectedProvider={selectedProvider}
             configuredProviders={configuredProviders}
             onProviderChange={onProviderChange}
@@ -234,7 +370,18 @@ interface MobileChatSettingsProps extends SettingsContentProps {
 }
 
 // Mobile Settings (Sheet/Drawer)
-export function MobileChatSettings({ model, onModelChange, temperature, onTemperatureChange, availableModels, systemPrompts, selectedPromptId, onPromptChange, selectedProvider, configuredProviders, onProviderChange, open, onOpenChange }: MobileChatSettingsProps) {
+export function MobileChatSettings({
+  agentId,
+  agentConfig,
+  onConfigChange,
+  availableModels,
+  systemPrompts,
+  selectedProvider,
+  configuredProviders,
+  onProviderChange,
+  open,
+  onOpenChange,
+}: MobileChatSettingsProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-72">
@@ -245,14 +392,11 @@ export function MobileChatSettings({ model, onModelChange, temperature, onTemper
           </SheetTitle>
         </SheetHeader>
         <SettingsContent
-          model={model}
-          onModelChange={onModelChange}
-          temperature={temperature}
-          onTemperatureChange={onTemperatureChange}
+          agentId={agentId}
+          agentConfig={agentConfig}
+          onConfigChange={onConfigChange}
           availableModels={availableModels}
           systemPrompts={systemPrompts}
-          selectedPromptId={selectedPromptId}
-          onPromptChange={onPromptChange}
           selectedProvider={selectedProvider}
           configuredProviders={configuredProviders}
           onProviderChange={onProviderChange}
