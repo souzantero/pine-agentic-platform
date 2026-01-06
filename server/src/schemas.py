@@ -231,3 +231,81 @@ class ThreadResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# =============================================================================
+# Prompt Schemas
+# =============================================================================
+
+
+class CreatePromptRequest(BaseModel):
+    name: str
+    content: str
+    role: str = "SYSTEM"  # SYSTEM, USER, ASSISTANT
+
+
+class UpdatePromptRequest(BaseModel):
+    name: str | None = None
+    content: str | None = None
+    role: str | None = None
+
+
+class PromptResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    content: str
+    role: str
+    created_by_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# =============================================================================
+# Model Provider Schemas
+# =============================================================================
+
+
+class CreateModelProviderRequest(BaseModel):
+    provider: str
+    api_key: str
+
+
+class ModelProviderResponse(BaseModel):
+    id: uuid.UUID
+    provider: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ModelProvidersListResponse(BaseModel):
+    default_provider: str | None
+    providers: List[ModelProviderResponse]
+
+
+class SetDefaultProviderRequest(BaseModel):
+    default_provider: str | None
+
+
+# =============================================================================
+# Models Schemas
+# =============================================================================
+
+
+class ModelInfo(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+
+
+class ModelsResponse(BaseModel):
+    default_provider: str | None
+    selected_provider: str | None
+    models: List[ModelInfo]
+    configured_providers: List[str]

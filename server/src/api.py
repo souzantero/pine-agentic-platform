@@ -9,7 +9,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from src.agent import build_agent
 from src.database import get_checkpoint_saver
 from src.helpers import agent_messages_to_list, chunk_to_text, get_config
-from src.routers import auth, invites, members, organizations, roles, threads
+from src.routers import auth, invites, members, model_providers, models, organizations, prompts, roles, threads
 from src.schemas import RunPayload
 
 app = FastAPI(title="PineChat API", version="1.0.0")
@@ -21,6 +21,9 @@ app.include_router(members.router)
 app.include_router(invites.router)
 app.include_router(roles.router)
 app.include_router(threads.router)
+app.include_router(prompts.router)
+app.include_router(model_providers.router)
+app.include_router(models.router)
 
 CheckpointSaverDependency = Annotated[AsyncPostgresSaver, Depends(get_checkpoint_saver)]
 
