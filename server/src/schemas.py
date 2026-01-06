@@ -117,3 +117,32 @@ class OrganizationDetailResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# =============================================================================
+# Member Schemas
+# =============================================================================
+
+
+class MemberUserResponse(BaseModel):
+    id: uuid.UUID
+    email: str
+    name: str
+
+    class Config:
+        from_attributes = True
+
+
+class MemberDetailResponse(BaseModel):
+    id: uuid.UUID
+    user: MemberUserResponse
+    role: RoleResponse
+    is_owner: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UpdateMemberRoleRequest(BaseModel):
+    role_id: uuid.UUID
