@@ -1,19 +1,23 @@
 import json
-from fastapi.responses import StreamingResponse
-import src.env  # noqa: F401
-
 from typing import Annotated, Any, Dict
+
+import src.env  # noqa: F401
 from fastapi import Depends, FastAPI, Query
+from fastapi.responses import StreamingResponse
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from sqlmodel import Session, col, select
 
 from src.agent import build_agent
-from src.entities import Thread
 from src.database import get_checkpoint_saver, get_session
+from src.entities import Thread
 from src.helpers import agent_messages_to_list, chunk_to_text, get_config
+from src.routers import auth
 from src.schemas import RunPayload
 
-app = FastAPI()
+app = FastAPI(title="PineChat API", version="1.0.0")
+
+# Routers
+app.include_router(auth.router)
 
 SessionDependency = Annotated[Session, Depends(get_session)]
 CheckpointSaverDependency = Annotated[AsyncPostgresSaver, Depends(get_checkpoint_saver)]
