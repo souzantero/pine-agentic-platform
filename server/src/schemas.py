@@ -89,3 +89,31 @@ class MembershipResponse(BaseModel):
 class MeResponse(BaseModel):
     user: UserResponse
     memberships: List[MembershipResponse]
+
+
+# =============================================================================
+# Organization Schemas
+# =============================================================================
+
+
+class CreateOrganizationRequest(BaseModel):
+    name: str
+    slug: str
+
+
+class UpdateOrganizationRequest(BaseModel):
+    name: str | None = None
+    slug: str | None = None
+    default_model_provider: str | None = None
+
+
+class OrganizationDetailResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    slug: str
+    default_model_provider: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
