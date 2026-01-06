@@ -2,16 +2,14 @@ import json
 from typing import Annotated, Any, Dict
 
 import src.env  # noqa: F401
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI
 from fastapi.responses import StreamingResponse
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from sqlmodel import Session, col, select
 
 from src.agent import build_agent
-from src.database import get_checkpoint_saver, get_session
-from src.entities import Thread
+from src.database import get_checkpoint_saver
 from src.helpers import agent_messages_to_list, chunk_to_text, get_config
-from src.routers import auth, invites, members, organizations, roles
+from src.routers import auth, invites, members, organizations, roles, threads
 from src.schemas import RunPayload
 
 app = FastAPI(title="PineChat API", version="1.0.0")
@@ -22,20 +20,20 @@ app.include_router(organizations.router)
 app.include_router(members.router)
 app.include_router(invites.router)
 app.include_router(roles.router)
+app.include_router(threads.router)
 
-SessionDependency = Annotated[Session, Depends(get_session)]
 CheckpointSaverDependency = Annotated[AsyncPostgresSaver, Depends(get_checkpoint_saver)]
 
 
-@app.get("/threads/{thread_id}/state/messages")
-async def get_thread(thread_id: str, checkpointer: CheckpointSaverDependency):
+@app.get("/agent/threads/{thread_id}/state/messages")
+async def get_thread_messages(thread_id: str, checkpointer: CheckpointSaverDependency):
     agent = build_agent(checkpointer)
     state_snapshot = await agent.aget_state(config=get_config(thread_id))
     state_messages = state_snapshot.values.get("messages", [])
     return {"messages": agent_messages_to_list(state_messages)}
 
 
-@app.post("/threads/{thread_id}/runs/invoke")
+@app.post("/agent/threads/{thread_id}/runs/invoke")
 async def invoke_run(
     thread_id: str, payload: RunPayload, checkpointer: CheckpointSaverDependency
 ):
@@ -48,7 +46,7 @@ async def invoke_run(
     return {"messages": agent_messages_to_list(state_messages)}
 
 
-@app.post("/threads/{thread_id}/runs/stream")
+@app.post("/agent/threads/{thread_id}/runs/stream")
 async def stream_run(
     thread_id: str, payload: RunPayload, checkpointer: CheckpointSaverDependency
 ):

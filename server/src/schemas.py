@@ -207,3 +207,27 @@ class RoleDetailResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# =============================================================================
+# Thread Schemas
+# =============================================================================
+
+
+class CreateThreadRequest(BaseModel):
+    title: str | None = None
+
+
+class UpdateThreadRequest(BaseModel):
+    title: str | None = None
+
+
+class ThreadResponse(BaseModel):
+    id: uuid.UUID
+    title: str | None
+    created_by_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
