@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Header } from "@/components/header";
 import { Sidebar, MobileSidebar, MobileThreadsDrawer, type Thread } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
@@ -24,9 +25,21 @@ interface ApiThread {
   updatedAt: string;
 }
 
+// Tipo da resposta da API de prompts
+interface ApiPrompt {
+  id: string;
+  name: string;
+  content: string;
+  role: string;
+  createdById: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function PromptsPage() {
   const router = useRouter();
-  const { isLoggedIn, isLoading, hasOrganization, hasPermission } = useAuth();
+  const { isLoggedIn, isLoading, hasOrganization, hasPermission, currentMembership } = useAuth();
+  const orgId = currentMembership?.organizationId;
 
   // Estados de threads para a sidebar
   const [threads, setThreads] = useState<Thread[]>([]);
@@ -60,12 +73,15 @@ export default function PromptsPage() {
 
   // Load threads for sidebar
   const loadThreads = useCallback(async () => {
-    try {
-      const response = await fetch("/api/threads");
-      if (!response.ok) return;
+    if (!orgId) return;
 
-      const data = await response.json();
-      const loadedThreads: Thread[] = data.threads.map((t: ApiThread) => ({
+    try {
+      const response = await api.get<ApiThread[]>(
+        `/organizations/${orgId}/threads`
+      );
+      if (response.error || !response.data) return;
+
+      const loadedThreads: Thread[] = response.data.map((t) => ({
         id: t.id,
         title: t.title || "Nova conversa",
         updatedAt: new Date(t.updatedAt),
@@ -75,22 +91,36 @@ export default function PromptsPage() {
     } catch (error) {
       console.error("Erro ao carregar threads:", error);
     }
-  }, []);
+  }, [orgId]);
 
   // Load prompts
   const loadPrompts = useCallback(async () => {
+    if (!orgId) return;
+
     try {
-      const response = await fetch("/api/prompts");
-      if (response.ok) {
-        const data = await response.json();
-        setPrompts(data.prompts);
-      }
+      const response = await api.get<ApiPrompt[]>(
+        `/organizations/${orgId}/prompts`
+      );
+      if (response.error || !response.data) return;
+
+      setPrompts(response.data.map((p) => ({
+        id: p.id,
+        name: p.name,
+        content: p.content,
+        role: p.role as "SYSTEM" | "USER" | "ASSISTANT",
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        createdBy: {
+          id: p.createdById,
+          user: { id: p.createdById, name: "" },
+        },
+      })));
     } catch (error) {
       console.error("Failed to load prompts:", error);
     } finally {
       setLoadingPrompts(false);
     }
-  }, []);
+  }, [orgId]);
 
   useEffect(() => {
     if (isLoggedIn && hasOrganization) {
@@ -107,14 +137,15 @@ export default function PromptsPage() {
 
   // Handle new chat
   const handleNewChat = async () => {
-    try {
-      const response = await fetch("/api/threads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+    if (!orgId) return;
 
-      if (!response.ok) return;
+    try {
+      const response = await api.post<ApiThread>(
+        `/organizations/${orgId}/threads`,
+        {}
+      );
+
+      if (response.error || !response.data) return;
 
       router.push("/");
     } catch (error) {
@@ -128,17 +159,16 @@ export default function PromptsPage() {
     content: string,
     role: string
   ): Promise<{ error?: string }> => {
+    if (!orgId) return { error: "Organização não selecionada" };
+
     try {
-      const response = await fetch("/api/prompts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, content, role }),
-      });
+      const response = await api.post<ApiPrompt>(
+        `/organizations/${orgId}/prompts`,
+        { name, content, role }
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { error: data.error };
+      if (response.error) {
+        return { error: response.error };
       }
 
       loadPrompts();
@@ -154,17 +184,16 @@ export default function PromptsPage() {
     content: string,
     role: string
   ): Promise<{ error?: string }> => {
+    if (!orgId) return { error: "Organização não selecionada" };
+
     try {
-      const response = await fetch(`/api/prompts/${promptId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, content, role }),
-      });
+      const response = await api.put<ApiPrompt>(
+        `/organizations/${orgId}/prompts/${promptId}`,
+        { name, content, role }
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { error: data.error };
+      if (response.error) {
+        return { error: response.error };
       }
 
       loadPrompts();
@@ -175,15 +204,15 @@ export default function PromptsPage() {
   };
 
   const handleDelete = async (promptId: string): Promise<{ error?: string }> => {
+    if (!orgId) return { error: "Organização não selecionada" };
+
     try {
-      const response = await fetch(`/api/prompts/${promptId}`, {
-        method: "DELETE",
-      });
+      const response = await api.delete(
+        `/organizations/${orgId}/prompts/${promptId}`
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { error: data.error };
+      if (response.error) {
+        return { error: response.error };
       }
 
       loadPrompts();

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Header } from "@/components/header";
 import { Sidebar, MobileSidebar, MobileThreadsDrawer, type Thread } from "@/components/sidebar";
 import { ChatArea, type Message } from "@/components/chat-area";
@@ -33,7 +34,8 @@ interface ApiThread {
 
 export default function Home() {
   const router = useRouter();
-  const { isLoggedIn, isLoading, hasOrganization } = useAuth();
+  const { isLoggedIn, isLoading, hasOrganization, currentMembership } = useAuth();
+  const orgId = currentMembership?.organizationId;
   const [threads, setThreads] = useState<ThreadWithMessages[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -48,17 +50,20 @@ export default function Home() {
 
   // Carregar threads da API
   const loadThreads = useCallback(async () => {
-    try {
-      const response = await fetch("/api/threads");
-      if (!response.ok) return;
+    if (!orgId) return;
 
-      const data = await response.json();
+    try {
+      const response = await api.get<ApiThread[]>(
+        `/organizations/${orgId}/threads`
+      );
+      if (response.error || !response.data) return;
+
       const defaultAgentId = getDefaultAgentId();
-      const loadedThreads: ThreadWithMessages[] = data.threads.map((t: ApiThread) => ({
+      const loadedThreads: ThreadWithMessages[] = response.data.map((t) => ({
         id: t.id,
         title: t.title || "Nova conversa",
         updatedAt: new Date(t.updatedAt),
-        messages: [], // Mensagens serao carregadas quando implementarmos a API
+        messages: [],
         agentId: defaultAgentId,
         agentConfig: getDefaultConfig(defaultAgentId),
       }));
@@ -69,19 +74,22 @@ export default function Home() {
     } finally {
       setIsLoadingThreads(false);
     }
-  }, []);
+  }, [orgId]);
 
   // Carregar prompts da API
   const loadPrompts = useCallback(async () => {
-    try {
-      const response = await fetch("/api/prompts");
-      if (!response.ok) return;
+    if (!orgId) return;
 
-      const data = await response.json();
+    try {
+      const response = await api.get<
+        { id: string; name: string; content: string; role: string }[]
+      >(`/organizations/${orgId}/prompts`);
+      if (response.error || !response.data) return;
+
       // Filtrar apenas prompts com role SYSTEM
-      const prompts: SystemPrompt[] = data.prompts
-        .filter((p: { role: string }) => p.role === "SYSTEM")
-        .map((p: { id: string; name: string; content: string }) => ({
+      const prompts: SystemPrompt[] = response.data
+        .filter((p) => p.role === "SYSTEM")
+        .map((p) => ({
           id: p.id,
           name: p.name,
           content: p.content,
@@ -91,23 +99,30 @@ export default function Home() {
     } catch (error) {
       console.error("Erro ao carregar prompts:", error);
     }
-  }, []);
+  }, [orgId]);
 
   // Carregar modelos disponiveis da API
   const loadModels = useCallback(async (provider?: string) => {
-    try {
-      const url = provider ? `/api/models?provider=${provider}` : "/api/models";
-      const response = await fetch(url);
-      if (!response.ok) return;
+    if (!orgId) return;
 
-      const data = await response.json();
-      setAvailableModels(data.models || []);
-      setSelectedProvider(data.selectedProvider || null);
-      setConfiguredProviders(data.configuredProviders || []);
+    try {
+      const url = provider
+        ? `/organizations/${orgId}/models?provider=${provider}`
+        : `/organizations/${orgId}/models`;
+      const response = await api.get<{
+        models: ModelOption[];
+        selectedProvider: string | null;
+        configuredProviders: string[];
+      }>(url);
+      if (response.error || !response.data) return;
+
+      setAvailableModels(response.data.models || []);
+      setSelectedProvider(response.data.selectedProvider || null);
+      setConfiguredProviders(response.data.configuredProviders || []);
     } catch (error) {
       console.error("Erro ao carregar modelos:", error);
     }
-  }, []);
+  }, [orgId]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -126,24 +141,24 @@ export default function Home() {
   const selectedThread = threads.find((t) => t.id === selectedId);
 
   const handleNewChat = async () => {
-    try {
-      const response = await fetch("/api/threads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+    if (!orgId) return;
 
-      if (!response.ok) {
+    try {
+      const response = await api.post<ApiThread>(
+        `/organizations/${orgId}/threads`,
+        {}
+      );
+
+      if (response.error || !response.data) {
         console.error("Erro ao criar thread");
         return;
       }
 
-      const data = await response.json();
       const defaultAgentId = getDefaultAgentId();
       const newThread: ThreadWithMessages = {
-        id: data.thread.id,
-        title: data.thread.title || "Nova conversa",
-        updatedAt: new Date(data.thread.updatedAt),
+        id: response.data.id,
+        title: response.data.title || "Nova conversa",
+        updatedAt: new Date(response.data.updatedAt),
         messages: [],
         agentId: defaultAgentId,
         agentConfig: getDefaultConfig(defaultAgentId),
@@ -193,20 +208,20 @@ export default function Home() {
   const handleSendMessage = async (content: string) => {
     if (!selectedId) {
       // Criar thread via API quando nao houver thread selecionada
+      if (!orgId) return;
+
       try {
         const title = content.slice(0, 30) + (content.length > 30 ? "..." : "");
-        const response = await fetch("/api/threads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title }),
-        });
+        const response = await api.post<ApiThread>(
+          `/organizations/${orgId}/threads`,
+          { title }
+        );
 
-        if (!response.ok) {
+        if (response.error || !response.data) {
           console.error("Erro ao criar thread");
           return;
         }
 
-        const data = await response.json();
         const userMessage: Message = {
           id: crypto.randomUUID(),
           role: "user",
@@ -216,9 +231,9 @@ export default function Home() {
 
         const defaultAgentId = getDefaultAgentId();
         const newThread: ThreadWithMessages = {
-          id: data.thread.id,
-          title: data.thread.title || title,
-          updatedAt: new Date(data.thread.updatedAt),
+          id: response.data.id,
+          title: response.data.title || title,
+          updatedAt: new Date(response.data.updatedAt),
           messages: [userMessage],
           agentId: defaultAgentId,
           agentConfig: getDefaultConfig(defaultAgentId),

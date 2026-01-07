@@ -87,6 +87,7 @@ def get_me(current_user: CurrentUser, session: SessionDep):
         membership_responses.append(
             MembershipResponse(
                 id=membership.id,
+                organization_id=membership.organization_id,
                 organization=OrganizationResponse(
                     id=membership.organization.id,
                     name=membership.organization.name,

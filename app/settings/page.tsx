@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,8 @@ const MODEL_PROVIDERS: { value: ModelProviderType; label: string; placeholder: s
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { isLoggedIn, isLoading, hasOrganization, hasPermission, refreshSession } = useAuth();
+  const { isLoggedIn, isLoading, hasOrganization, hasPermission, refreshSession, currentMembership } = useAuth();
+  const orgId = currentMembership?.organizationId;
 
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [name, setName] = useState("");
@@ -78,34 +80,39 @@ export default function SettingsPage() {
 
   // Load organization data
   const loadOrganization = useCallback(async () => {
+    if (!orgId) return;
+
     try {
-      const response = await fetch("/api/organizations/settings");
-      if (response.ok) {
-        const data = await response.json();
-        setOrganization(data.organization);
-        setName(data.organization.name);
-        setSlug(data.organization.slug);
-      }
+      const response = await api.get<Organization>(`/organizations/${orgId}`);
+      if (response.error || !response.data) return;
+
+      setOrganization(response.data);
+      setName(response.data.name);
+      setSlug(response.data.slug);
     } catch (error) {
       console.error("Failed to load organization:", error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [orgId]);
 
   // Load model providers
   const loadModelProviders = useCallback(async () => {
+    if (!orgId) return;
+
     try {
-      const response = await fetch("/api/organizations/model-providers");
-      if (response.ok) {
-        const data = await response.json();
-        setModelProviders(data.providers);
-        setDefaultProvider(data.defaultProvider);
-      }
+      const response = await api.get<{
+        providers: ModelProviderConfig[];
+        defaultProvider: ModelProviderType | null;
+      }>(`/organizations/${orgId}/model-providers`);
+      if (response.error || !response.data) return;
+
+      setModelProviders(response.data.providers);
+      setDefaultProvider(response.data.defaultProvider);
     } catch (error) {
       console.error("Failed to load model providers:", error);
     }
-  }, []);
+  }, [orgId]);
 
   useEffect(() => {
     if (isLoggedIn && hasOrganization && canManage) {
@@ -116,7 +123,7 @@ export default function SettingsPage() {
 
   // Adicionar ou atualizar provedor
   const handleAddProvider = async () => {
-    if (!newProviderType || !newApiKey.trim()) {
+    if (!orgId || !newProviderType || !newApiKey.trim()) {
       setProviderError("Selecione um provedor e insira a API Key");
       return;
     }
@@ -126,16 +133,13 @@ export default function SettingsPage() {
     setSavingProvider(true);
 
     try {
-      const response = await fetch("/api/organizations/model-providers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: newProviderType, apiKey: newApiKey }),
-      });
+      const response = await api.post<ModelProviderConfig>(
+        `/organizations/${orgId}/model-providers`,
+        { provider: newProviderType, apiKey: newApiKey }
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setProviderError(data.error);
+      if (response.error) {
+        setProviderError(response.error);
         return;
       }
 
@@ -155,12 +159,14 @@ export default function SettingsPage() {
 
   // Remover provedor
   const handleRemoveProvider = async (providerId: string) => {
-    try {
-      const response = await fetch(`/api/organizations/model-providers/${providerId}`, {
-        method: "DELETE",
-      });
+    if (!orgId) return;
 
-      if (response.ok) {
+    try {
+      const response = await api.delete(
+        `/organizations/${orgId}/model-providers/${providerId}`
+      );
+
+      if (!response.error) {
         await loadModelProviders();
       }
     } catch (error) {
@@ -170,14 +176,15 @@ export default function SettingsPage() {
 
   // Definir provedor padrao
   const handleSetDefaultProvider = async (provider: ModelProviderType | null) => {
-    try {
-      const response = await fetch("/api/organizations/model-providers", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ defaultProvider: provider }),
-      });
+    if (!orgId) return;
 
-      if (response.ok) {
+    try {
+      const response = await api.put(
+        `/organizations/${orgId}/model-providers/default`,
+        { defaultProvider: provider }
+      );
+
+      if (!response.error) {
         setDefaultProvider(provider);
       }
     } catch (error) {
@@ -192,26 +199,27 @@ export default function SettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!orgId) return;
+
     setError(null);
     setSuccess(false);
     setSaving(true);
 
     try {
-      const response = await fetch("/api/organizations/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug }),
-      });
+      const response = await api.put<Organization>(
+        `/organizations/${orgId}`,
+        { name, slug }
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error);
+      if (response.error) {
+        setError(response.error);
         setSaving(false);
         return;
       }
 
-      setOrganization(data.organization);
+      if (response.data) {
+        setOrganization(response.data);
+      }
       setSuccess(true);
 
       // Refresh session to update org name in header

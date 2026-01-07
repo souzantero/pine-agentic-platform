@@ -25,16 +25,13 @@ export default function OnboardingPage() {
   const { isLoggedIn, isLoading, hasOrganization, createOrganization } =
     useAuth();
 
-  // Redirecionar se não estiver logado
+  // Redirecionar baseado no estado de autenticação
   useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      router.push("/login");
-    }
-  }, [isLoading, isLoggedIn, router]);
+    if (isLoading) return;
 
-  // Redirecionar se já tiver organização
-  useEffect(() => {
-    if (!isLoading && isLoggedIn && hasOrganization) {
+    if (!isLoggedIn) {
+      router.push("/login");
+    } else if (hasOrganization) {
       router.push("/");
     }
   }, [isLoading, isLoggedIn, hasOrganization, router]);
@@ -87,6 +84,7 @@ export default function OnboardingPage() {
     router.push("/");
   };
 
+  // Mostrar loading enquanto verifica autenticação
   if (isLoading || !isLoggedIn || hasOrganization) {
     return null;
   }

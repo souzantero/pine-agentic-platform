@@ -1,4 +1,0 @@
--- Adicionar novos valores ao enum Permission
-ALTER TYPE "Permission" ADD VALUE IF NOT EXISTS 'THREADS_READ';
-ALTER TYPE "Permission" ADD VALUE IF NOT EXISTS 'THREADS_WRITE';
-ALTER TYPE "Permission" ADD VALUE IF NOT EXISTS 'THREADS_DELETE';

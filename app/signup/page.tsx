@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
@@ -23,7 +23,14 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { signUp } = useAuth();
+  const { signUp, isLoggedIn, isLoading, hasOrganization } = useAuth();
+
+  // Redirecionar quando o usuário estiver logado
+  useEffect(() => {
+    if (!isLoading && isLoggedIn) {
+      router.push(hasOrganization ? "/" : "/onboarding");
+    }
+  }, [isLoading, isLoggedIn, hasOrganization, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,11 +48,7 @@ export default function SignupPage() {
     if (result.error) {
       setError(result.error);
       setLoading(false);
-      return;
     }
-
-    // Novo usuário não tem organização, vai para onboarding
-    router.push("/onboarding");
   };
 
   return (

@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -48,16 +49,17 @@ export default function InvitePage({
   useEffect(() => {
     async function fetchInvite() {
       try {
-        const response = await fetch(`/api/invites/${token}`);
-        const data = await response.json();
+        const response = await api.get<InviteInfo>(`/invites/${token}`);
 
-        if (!response.ok) {
-          setError(data.error || "Erro ao carregar convite");
+        if (response.error) {
+          setError(response.error || "Erro ao carregar convite");
           setLoading(false);
           return;
         }
 
-        setInviteInfo(data);
+        if (response.data) {
+          setInviteInfo(response.data);
+        }
       } catch {
         setError("Erro ao carregar convite");
       } finally {
@@ -73,14 +75,10 @@ export default function InvitePage({
     setAccepting(true);
 
     try {
-      const response = await fetch(`/api/invites/${token}`, {
-        method: "POST",
-      });
+      const response = await api.post(`/invites/${token}/accept`);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Erro ao aceitar convite");
+      if (response.error) {
+        setError(response.error || "Erro ao aceitar convite");
         setAccepting(false);
         return;
       }

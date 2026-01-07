@@ -3,7 +3,24 @@ from datetime import datetime
 from typing import List
 
 from langchain_core.messages import HumanMessage
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
+
+
+def to_camel(string: str) -> str:
+    """Converte snake_case para camelCase."""
+    components = string.split("_")
+    return components[0] + "".join(x.title() for x in components[1:])
+
+
+class CamelCaseModel(BaseModel):
+    """Base model que serializa campos em camelCase."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+        serialize_by_alias=True,
+    )
 
 
 # =============================================================================
@@ -11,18 +28,18 @@ from pydantic import BaseModel, EmailStr
 # =============================================================================
 
 
-class MessageInput(BaseModel):
+class MessageInput(CamelCaseModel):
     content: str
 
     def to_agent(self):
         return HumanMessage(content=self.content)
 
 
-class RunInput(BaseModel):
+class RunInput(CamelCaseModel):
     messages: List[MessageInput]
 
 
-class RunPayload(BaseModel):
+class RunPayload(CamelCaseModel):
     input: RunInput
 
 
@@ -31,62 +48,51 @@ class RunPayload(BaseModel):
 # =============================================================================
 
 
-class RegisterRequest(BaseModel):
+class RegisterRequest(CamelCaseModel):
     email: EmailStr
     name: str
     password: str
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(CamelCaseModel):
     email: EmailStr
     password: str
 
 
-class TokenResponse(BaseModel):
+class TokenResponse(CamelCaseModel):
     access_token: str
     token_type: str = "bearer"
 
 
-class UserResponse(BaseModel):
+class UserResponse(CamelCaseModel):
     id: uuid.UUID
     email: str
     name: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
 
-
-class OrganizationResponse(BaseModel):
+class OrganizationResponse(CamelCaseModel):
     id: uuid.UUID
     name: str
     slug: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
 
-
-class RoleResponse(BaseModel):
+class RoleResponse(CamelCaseModel):
     id: uuid.UUID
     name: str
     description: str | None
 
-    class Config:
-        from_attributes = True
 
-
-class MembershipResponse(BaseModel):
+class MembershipResponse(CamelCaseModel):
     id: uuid.UUID
+    organization_id: uuid.UUID
     organization: OrganizationResponse
     role: RoleResponse
     is_owner: bool
 
-    class Config:
-        from_attributes = True
 
-
-class MeResponse(BaseModel):
+class MeResponse(CamelCaseModel):
     user: UserResponse
     memberships: List[MembershipResponse]
 
@@ -96,18 +102,18 @@ class MeResponse(BaseModel):
 # =============================================================================
 
 
-class CreateOrganizationRequest(BaseModel):
+class CreateOrganizationRequest(CamelCaseModel):
     name: str
     slug: str
 
 
-class UpdateOrganizationRequest(BaseModel):
+class UpdateOrganizationRequest(CamelCaseModel):
     name: str | None = None
     slug: str | None = None
     default_model_provider: str | None = None
 
 
-class OrganizationDetailResponse(BaseModel):
+class OrganizationDetailResponse(CamelCaseModel):
     id: uuid.UUID
     name: str
     slug: str
@@ -115,36 +121,27 @@ class OrganizationDetailResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 # =============================================================================
 # Member Schemas
 # =============================================================================
 
 
-class MemberUserResponse(BaseModel):
+class MemberUserResponse(CamelCaseModel):
     id: uuid.UUID
     email: str
     name: str
 
-    class Config:
-        from_attributes = True
 
-
-class MemberDetailResponse(BaseModel):
+class MemberDetailResponse(CamelCaseModel):
     id: uuid.UUID
     user: MemberUserResponse
     role: RoleResponse
     is_owner: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
 
-
-class UpdateMemberRoleRequest(BaseModel):
+class UpdateMemberRoleRequest(CamelCaseModel):
     role_id: uuid.UUID
 
 
@@ -153,12 +150,12 @@ class UpdateMemberRoleRequest(BaseModel):
 # =============================================================================
 
 
-class CreateInviteRequest(BaseModel):
+class CreateInviteRequest(CamelCaseModel):
     role_id: uuid.UUID
     expires_in_days: int = 7
 
 
-class InviteResponse(BaseModel):
+class InviteResponse(CamelCaseModel):
     id: uuid.UUID
     token: str
     organization: OrganizationResponse
@@ -166,11 +163,8 @@ class InviteResponse(BaseModel):
     expires_at: datetime
     created_at: datetime
 
-    class Config:
-        from_attributes = True
 
-
-class InviteInfoResponse(BaseModel):
+class InviteInfoResponse(CamelCaseModel):
     """Informacoes publicas do convite (para pagina de aceite)."""
     organization_name: str
     organization_slug: str
@@ -185,19 +179,19 @@ class InviteInfoResponse(BaseModel):
 # =============================================================================
 
 
-class CreateRoleRequest(BaseModel):
+class CreateRoleRequest(CamelCaseModel):
     name: str
     description: str | None = None
     permissions: List[str]
 
 
-class UpdateRoleRequest(BaseModel):
+class UpdateRoleRequest(CamelCaseModel):
     name: str | None = None
     description: str | None = None
     permissions: List[str] | None = None
 
 
-class RoleDetailResponse(BaseModel):
+class RoleDetailResponse(CamelCaseModel):
     id: uuid.UUID
     name: str
     description: str | None
@@ -205,32 +199,26 @@ class RoleDetailResponse(BaseModel):
     permissions: List[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 # =============================================================================
 # Thread Schemas
 # =============================================================================
 
 
-class CreateThreadRequest(BaseModel):
+class CreateThreadRequest(CamelCaseModel):
     title: str | None = None
 
 
-class UpdateThreadRequest(BaseModel):
+class UpdateThreadRequest(CamelCaseModel):
     title: str | None = None
 
 
-class ThreadResponse(BaseModel):
+class ThreadResponse(CamelCaseModel):
     id: uuid.UUID
     title: str | None
     created_by_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # =============================================================================
@@ -238,19 +226,19 @@ class ThreadResponse(BaseModel):
 # =============================================================================
 
 
-class CreatePromptRequest(BaseModel):
+class CreatePromptRequest(CamelCaseModel):
     name: str
     content: str
     role: str = "SYSTEM"  # SYSTEM, USER, ASSISTANT
 
 
-class UpdatePromptRequest(BaseModel):
+class UpdatePromptRequest(CamelCaseModel):
     name: str | None = None
     content: str | None = None
     role: str | None = None
 
 
-class PromptResponse(BaseModel):
+class PromptResponse(CamelCaseModel):
     id: uuid.UUID
     name: str
     content: str
@@ -259,37 +247,31 @@ class PromptResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 # =============================================================================
 # Model Provider Schemas
 # =============================================================================
 
 
-class CreateModelProviderRequest(BaseModel):
+class CreateModelProviderRequest(CamelCaseModel):
     provider: str
     api_key: str
 
 
-class ModelProviderResponse(BaseModel):
+class ModelProviderResponse(CamelCaseModel):
     id: uuid.UUID
     provider: str
     is_active: bool
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
 
-
-class ModelProvidersListResponse(BaseModel):
+class ModelProvidersListResponse(CamelCaseModel):
     default_provider: str | None
     providers: List[ModelProviderResponse]
 
 
-class SetDefaultProviderRequest(BaseModel):
+class SetDefaultProviderRequest(CamelCaseModel):
     default_provider: str | None
 
 
@@ -298,13 +280,13 @@ class SetDefaultProviderRequest(BaseModel):
 # =============================================================================
 
 
-class ModelInfo(BaseModel):
+class ModelInfo(CamelCaseModel):
     id: str
     name: str
     description: str | None = None
 
 
-class ModelsResponse(BaseModel):
+class ModelsResponse(CamelCaseModel):
     default_provider: str | None
     selected_provider: str | None
     models: List[ModelInfo]

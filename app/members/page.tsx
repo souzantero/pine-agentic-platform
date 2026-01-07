@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +28,8 @@ interface Role {
 
 export default function MembersPage() {
   const router = useRouter();
-  const { user, isLoggedIn, isLoading, hasOrganization, hasPermission } = useAuth();
+  const { user, isLoggedIn, isLoading, hasOrganization, hasPermission, currentMembership } = useAuth();
+  const orgId = currentMembership?.organizationId;
 
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -57,51 +59,58 @@ export default function MembersPage() {
 
   // Load members
   const loadMembers = useCallback(async () => {
+    if (!orgId) return;
+
     try {
-      const response = await fetch("/api/members");
-      if (response.ok) {
-        const data = await response.json();
-        setMembers(data.members);
-      }
+      const response = await api.get<Member[]>(
+        `/organizations/${orgId}/members`
+      );
+      if (response.error || !response.data) return;
+
+      setMembers(response.data);
     } catch (error) {
       console.error("Failed to load members:", error);
     } finally {
       setLoadingMembers(false);
     }
-  }, []);
+  }, [orgId]);
 
   // Load invites
   const loadInvites = useCallback(async () => {
-    if (!canInvite) {
+    if (!canInvite || !orgId) {
       setLoadingInvites(false);
       return;
     }
 
     try {
-      const response = await fetch("/api/invites");
-      if (response.ok) {
-        const data = await response.json();
-        setInvites(data.invites);
-      }
+      const response = await api.get<Invite[]>(
+        `/organizations/${orgId}/invites`
+      );
+      if (response.error || !response.data) return;
+
+      setInvites(response.data);
     } catch (error) {
       console.error("Failed to load invites:", error);
     } finally {
       setLoadingInvites(false);
     }
-  }, [canInvite]);
+  }, [canInvite, orgId]);
 
   // Load roles
   const loadRoles = useCallback(async () => {
+    if (!orgId) return;
+
     try {
-      const response = await fetch("/api/roles");
-      if (response.ok) {
-        const data = await response.json();
-        setRoles(data.roles);
-      }
+      const response = await api.get<Role[]>(
+        `/organizations/${orgId}/roles`
+      );
+      if (response.error || !response.data) return;
+
+      setRoles(response.data);
     } catch (error) {
       console.error("Failed to load roles:", error);
     }
-  }, []);
+  }, [orgId]);
 
   useEffect(() => {
     if (isLoggedIn && hasOrganization) {
@@ -115,23 +124,22 @@ export default function MembersPage() {
   const handleCreateInvite = async (
     roleId: string
   ): Promise<{ inviteLink?: string; error?: string }> => {
+    if (!orgId) return { error: "Organização não selecionada" };
+
     try {
-      const response = await fetch("/api/invites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roleId }),
-      });
+      const response = await api.post<{ inviteLink: string }>(
+        `/organizations/${orgId}/invites`,
+        { roleId }
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { error: data.error };
+      if (response.error) {
+        return { error: response.error };
       }
 
       // Reload invites
       loadInvites();
 
-      return { inviteLink: data.invite.inviteLink };
+      return { inviteLink: response.data?.inviteLink };
     } catch {
       return { error: "Erro ao criar convite" };
     }
@@ -141,17 +149,16 @@ export default function MembersPage() {
     memberId: string,
     roleId: string
   ): Promise<{ error?: string }> => {
+    if (!orgId) return { error: "Organização não selecionada" };
+
     try {
-      const response = await fetch(`/api/members/${memberId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roleId }),
-      });
+      const response = await api.put(
+        `/organizations/${orgId}/members/${memberId}/role`,
+        { roleId }
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { error: data.error };
+      if (response.error) {
+        return { error: response.error };
       }
 
       // Reload members
@@ -164,15 +171,15 @@ export default function MembersPage() {
   };
 
   const handleRemove = async (memberId: string): Promise<{ error?: string }> => {
+    if (!orgId) return { error: "Organização não selecionada" };
+
     try {
-      const response = await fetch(`/api/members/${memberId}`, {
-        method: "DELETE",
-      });
+      const response = await api.delete(
+        `/organizations/${orgId}/members/${memberId}`
+      );
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { error: data.error };
+      if (response.error) {
+        return { error: response.error };
       }
 
       // Reload members

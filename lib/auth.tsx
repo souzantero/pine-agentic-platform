@@ -8,6 +8,15 @@ import {
   useEffect,
   ReactNode,
 } from "react";
+import {
+  api,
+  getToken,
+  setToken,
+  clearToken,
+  getCurrentOrgId,
+  setCurrentOrgId as saveCurrentOrgId,
+  clearCurrentOrgId,
+} from "./api";
 
 // Tipos
 export interface User {
@@ -93,22 +102,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadSession = useCallback(async () => {
+  const loadSession = useCallback(async (skipLoadingState = false) => {
+    if (!skipLoadingState) {
+      setIsLoading(true);
+    }
+
     try {
-      // Carregar sessão e org ativa em paralelo
-      const [sessionRes, currentOrgRes] = await Promise.all([
-        fetch("/api/auth/me"),
-        fetch("/api/organizations/current"),
-      ]);
+      // Verificar se há token antes de fazer requisição
+      const token = getToken();
+      if (!token) {
+        setUser(null);
+        setMemberships([]);
+        setCurrentOrgId(null);
+        return;
+      }
 
-      const sessionData = await sessionRes.json();
-      setUser(sessionData.user);
-      setMemberships(sessionData.memberships || []);
+      // Carregar sessão do backend
+      const sessionRes = await api.get<{
+        user: User;
+        memberships: Membership[];
+      }>("/auth/me");
 
-      if (currentOrgRes.ok) {
-        const currentOrgData = await currentOrgRes.json();
-        if (currentOrgData.currentOrganization) {
-          setCurrentOrgId(currentOrgData.currentOrganization.organizationId);
+      // Se token expirado ou inválido, limpar estado
+      if (sessionRes.status === 401) {
+        clearToken();
+        clearCurrentOrgId();
+        setUser(null);
+        setMemberships([]);
+        setCurrentOrgId(null);
+        return;
+      }
+
+      if (sessionRes.data) {
+        setUser(sessionRes.data.user);
+        const userMemberships = sessionRes.data.memberships || [];
+        setMemberships(userMemberships);
+
+        // Carregar org atual do localStorage e validar
+        const savedOrgId = getCurrentOrgId();
+        const isValidOrg = userMemberships.some(
+          (m) => m.organizationId === savedOrgId
+        );
+
+        if (savedOrgId && isValidOrg) {
+          setCurrentOrgId(savedOrgId);
+        } else if (userMemberships.length > 0) {
+          // Se não há org salva ou não é mais membro, usar a primeira
+          const firstOrgId = userMemberships[0].organizationId;
+          setCurrentOrgId(firstOrgId);
+          saveCurrentOrgId(firstOrgId);
+        } else {
+          setCurrentOrgId(null);
         }
       }
     } catch (error) {
@@ -125,20 +169,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(
     async (email: string, password: string): Promise<{ error?: string }> => {
       try {
-        const response = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
+        const response = await api.post<{
+          accessToken: string;
+          tokenType: string;
+        }>("/auth/login", { email, password });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          return { error: data.error };
+        if (response.error) {
+          return { error: response.error };
         }
 
-        // Recarregar sessão para obter memberships
-        await loadSession();
+        if (response.data?.accessToken) {
+          // Salvar token JWT no localStorage
+          setToken(response.data.accessToken);
+          // Carregar dados do usuário
+          await loadSession();
+        }
+
         return {};
       } catch (error) {
         console.error("Sign in error:", error);
@@ -155,37 +201,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name?: string
     ): Promise<{ error?: string }> => {
       try {
-        const response = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, name }),
-        });
+        const response = await api.post<{
+          accessToken: string;
+          tokenType: string;
+        }>("/auth/register", { email, name: name || email.split("@")[0], password });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          return { error: data.error };
+        if (response.error) {
+          return { error: response.error };
         }
 
-        setUser(data.user);
-        setMemberships([]); // Novo usuário não tem organizações
+        if (response.data?.accessToken) {
+          // Salvar token JWT no localStorage
+          setToken(response.data.accessToken);
+          // Carregar dados do usuário
+          await loadSession();
+        }
+
         return {};
       } catch (error) {
         console.error("Sign up error:", error);
         return { error: "Erro ao conectar com o servidor" };
       }
     },
-    []
+    [loadSession]
   );
 
   const signOut = useCallback(async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      setUser(null);
-      setMemberships([]);
-    } catch (error) {
-      console.error("Sign out error:", error);
-    }
+    // JWT é stateless - apenas limpar dados locais
+    clearToken();
+    clearCurrentOrgId();
+    setUser(null);
+    setMemberships([]);
+    setCurrentOrgId(null);
   }, []);
 
   const createOrganization = useCallback(
@@ -194,21 +241,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       slug: string
     ): Promise<{ error?: string; organization?: Organization }> => {
       try {
-        const response = await fetch("/api/organizations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, slug }),
-        });
+        // Backend retorna a org diretamente, não em { organization: ... }
+        const response = await api.post<Organization>(
+          "/organizations",
+          { name, slug }
+        );
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          return { error: data.error };
+        if (response.error) {
+          return { error: response.error };
         }
 
-        // Recarregar sessão para atualizar memberships
-        await loadSession();
-        return { organization: data.organization };
+        const newOrg = response.data;
+        if (newOrg) {
+          // Definir a nova org como atual
+          saveCurrentOrgId(newOrg.id);
+          setCurrentOrgId(newOrg.id);
+        }
+
+        // Recarregar sessão para atualizar memberships (sem resetar loading)
+        await loadSession(true);
+        return { organization: newOrg };
       } catch (error) {
         console.error("Create organization error:", error);
         return { error: "Erro ao criar organização" };
@@ -218,32 +270,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const refreshSession = useCallback(async () => {
-    await loadSession();
+    await loadSession(true); // Não mostrar loading ao atualizar
   }, [loadSession]);
 
   const switchOrganization = useCallback(
     async (organizationId: string): Promise<{ error?: string }> => {
-      try {
-        const response = await fetch("/api/organizations/current", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ organizationId }),
-        });
+      // Verificar se o usuário é membro desta org
+      const isMember = memberships.some(
+        (m) => m.organizationId === organizationId
+      );
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          return { error: data.error };
-        }
-
-        setCurrentOrgId(organizationId);
-        return {};
-      } catch (error) {
-        console.error("Switch organization error:", error);
-        return { error: "Erro ao trocar organização" };
+      if (!isMember) {
+        return { error: "Você não é membro desta organização" };
       }
+
+      // Salvar no localStorage e atualizar estado
+      saveCurrentOrgId(organizationId);
+      setCurrentOrgId(organizationId);
+      return {};
     },
-    []
+    [memberships]
   );
 
   // Encontrar membership atual baseado no currentOrgId

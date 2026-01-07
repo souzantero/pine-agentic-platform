@@ -3,6 +3,7 @@ from typing import Annotated, Any, Dict
 
 import src.env  # noqa: F401
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
@@ -13,6 +14,15 @@ from src.routers import auth, invites, members, model_providers, models, organiz
 from src.schemas import RunPayload
 
 app = FastAPI(title="PineChat API", version="1.0.0")
+
+# CORS - permitir frontend Next.js
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Routers
 app.include_router(auth.router)
