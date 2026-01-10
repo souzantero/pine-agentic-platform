@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { api } from "@/lib/api";
+import { useOrganization, useModelProviders } from "@/lib/hooks";
+import { MODEL_PROVIDERS } from "@/lib/types";
+import type { ModelProviderType } from "@/lib/types";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,44 +20,34 @@ import {
 } from "@/components/ui/select";
 import { Settings, ArrowLeft, Check, Eye, EyeOff, Trash2, Plus } from "lucide-react";
 
-type ModelProviderType = "OPENAI" | "OPENROUTER" | "ANTHROPIC" | "GOOGLE";
-
-interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  createdAt: string;
-}
-
-interface ModelProviderConfig {
-  id: string;
-  provider: ModelProviderType;
-  isActive: boolean;
-}
-
-const MODEL_PROVIDERS: { value: ModelProviderType; label: string; placeholder: string }[] = [
-  { value: "OPENAI", label: "OpenAI", placeholder: "sk-..." },
-  { value: "OPENROUTER", label: "OpenRouter", placeholder: "sk-or-..." },
-  { value: "ANTHROPIC", label: "Anthropic", placeholder: "sk-ant-..." },
-  { value: "GOOGLE", label: "Google AI", placeholder: "AIza..." },
-];
-
 export default function SettingsPage() {
   const router = useRouter();
-  const { isLoggedIn, isLoading, hasOrganization, hasPermission, refreshSession, currentMembership } = useAuth();
-  const orgId = currentMembership?.organizationId;
+  const { isLoggedIn, isLoading: authLoading, hasOrganization, hasPermission } = useAuth();
 
-  const [organization, setOrganization] = useState<Organization | null>(null);
+  // Hooks
+  const {
+    organization,
+    isLoading: orgLoading,
+    updateOrganization,
+  } = useOrganization();
+
+  const {
+    providers: modelProviders,
+    defaultProvider,
+    isLoading: providersLoading,
+    addProvider,
+    removeProvider,
+    setDefaultProvider,
+  } = useModelProviders();
+
+  // Estados do formulário de organização
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Estados para Model Providers
-  const [modelProviders, setModelProviders] = useState<ModelProviderConfig[]>([]);
-  const [defaultProvider, setDefaultProvider] = useState<ModelProviderType | null>(null);
+  // Estados para adicionar provedor
   const [newProviderType, setNewProviderType] = useState<ModelProviderType | "">("");
   const [newApiKey, setNewApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
@@ -65,9 +57,9 @@ export default function SettingsPage() {
 
   const canManage = hasPermission("ORGANIZATION_MANAGE");
 
-  // Redirect if not authenticated or no permission
+  // Redirect se não autenticado ou sem permissão
   useEffect(() => {
-    if (!isLoading) {
+    if (!authLoading) {
       if (!isLoggedIn) {
         router.push("/login");
       } else if (!hasOrganization) {
@@ -76,54 +68,39 @@ export default function SettingsPage() {
         router.push("/");
       }
     }
-  }, [isLoading, isLoggedIn, hasOrganization, canManage, router]);
+  }, [authLoading, isLoggedIn, hasOrganization, canManage, router]);
 
-  // Load organization data
-  const loadOrganization = useCallback(async () => {
-    if (!orgId) return;
-
-    try {
-      const response = await api.get<Organization>(`/organizations/${orgId}`);
-      if (response.error || !response.data) return;
-
-      setOrganization(response.data);
-      setName(response.data.name);
-      setSlug(response.data.slug);
-    } catch (error) {
-      console.error("Failed to load organization:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId]);
-
-  // Load model providers
-  const loadModelProviders = useCallback(async () => {
-    if (!orgId) return;
-
-    try {
-      const response = await api.get<{
-        providers: ModelProviderConfig[];
-        defaultProvider: ModelProviderType | null;
-      }>(`/organizations/${orgId}/model-providers`);
-      if (response.error || !response.data) return;
-
-      setModelProviders(response.data.providers);
-      setDefaultProvider(response.data.defaultProvider);
-    } catch (error) {
-      console.error("Failed to load model providers:", error);
-    }
-  }, [orgId]);
-
+  // Sincronizar formulário com dados da organização
   useEffect(() => {
-    if (isLoggedIn && hasOrganization && canManage) {
-      loadOrganization();
-      loadModelProviders();
+    if (organization) {
+      setName(organization.name);
+      setSlug(organization.slug);
     }
-  }, [isLoggedIn, hasOrganization, canManage, loadOrganization, loadModelProviders]);
+  }, [organization]);
 
-  // Adicionar ou atualizar provedor
+  // Handlers de organização
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setError(null);
+    setSuccess(false);
+    setSaving(true);
+
+    const result = await updateOrganization({ name, slug });
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    }
+
+    setSaving(false);
+  };
+
+  // Handlers de provedores
   const handleAddProvider = async () => {
-    if (!orgId || !newProviderType || !newApiKey.trim()) {
+    if (!newProviderType || !newApiKey.trim()) {
       setProviderError("Selecione um provedor e insira a API Key");
       return;
     }
@@ -132,110 +109,41 @@ export default function SettingsPage() {
     setProviderSuccess(false);
     setSavingProvider(true);
 
-    try {
-      const response = await api.post<ModelProviderConfig>(
-        `/organizations/${orgId}/model-providers`,
-        { provider: newProviderType, apiKey: newApiKey }
-      );
+    const result = await addProvider(newProviderType, newApiKey);
 
-      if (response.error) {
-        setProviderError(response.error);
-        return;
-      }
-
+    if (result.error) {
+      setProviderError(result.error);
+    } else {
       setProviderSuccess(true);
       setNewProviderType("");
       setNewApiKey("");
       setShowApiKey(false);
-      await loadModelProviders();
-
       setTimeout(() => setProviderSuccess(false), 3000);
-    } catch {
-      setProviderError("Erro ao salvar provedor");
-    } finally {
-      setSavingProvider(false);
     }
+
+    setSavingProvider(false);
   };
 
-  // Remover provedor
   const handleRemoveProvider = async (providerId: string) => {
-    if (!orgId) return;
-
-    try {
-      const response = await api.delete(
-        `/organizations/${orgId}/model-providers/${providerId}`
-      );
-
-      if (!response.error) {
-        await loadModelProviders();
-      }
-    } catch (error) {
-      console.error("Failed to remove provider:", error);
+    const result = await removeProvider(providerId);
+    if (result.error) {
+      setProviderError(result.error);
     }
   };
 
-  // Definir provedor padrao
   const handleSetDefaultProvider = async (provider: ModelProviderType | null) => {
-    if (!orgId) return;
-
-    try {
-      const response = await api.put(
-        `/organizations/${orgId}/model-providers/default`,
-        { defaultProvider: provider }
-      );
-
-      if (!response.error) {
-        setDefaultProvider(provider);
-      }
-    } catch (error) {
-      console.error("Failed to set default provider:", error);
-    }
+    await setDefaultProvider(provider);
   };
 
-  // Provedores disponiveis para adicionar (que ainda nao foram configurados)
+  // Provedores disponíveis para adicionar
   const availableProviders = MODEL_PROVIDERS.filter(
     (p) => !modelProviders.some((mp) => mp.provider === p.value)
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!orgId) return;
-
-    setError(null);
-    setSuccess(false);
-    setSaving(true);
-
-    try {
-      const response = await api.put<Organization>(
-        `/organizations/${orgId}`,
-        { name, slug }
-      );
-
-      if (response.error) {
-        setError(response.error);
-        setSaving(false);
-        return;
-      }
-
-      if (response.data) {
-        setOrganization(response.data);
-      }
-      setSuccess(true);
-
-      // Refresh session to update org name in header
-      await refreshSession();
-
-      // Hide success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
-    } catch {
-      setError("Erro ao salvar configurações");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const hasChanges =
     organization && (name !== organization.name || slug !== organization.slug);
+
+  const isLoading = authLoading || orgLoading || providersLoading;
 
   if (isLoading || !isLoggedIn || !hasOrganization || !canManage) {
     return null;
@@ -278,67 +186,61 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="flex justify-center py-8 text-muted-foreground">
-                  Carregando...
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                  <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950/50 rounded-md">
+                    {error}
+                  </div>
+                )}
+
+                {success && (
+                  <div className="p-3 text-sm text-green-600 bg-green-50 dark:bg-green-950/50 rounded-md flex items-center gap-2">
+                    <Check className="h-4 w-4" />
+                    Configurações salvas com sucesso!
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome da Organização</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Minha Empresa"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {error && (
-                    <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950/50 rounded-md">
-                      {error}
-                    </div>
-                  )}
 
-                  {success && (
-                    <div className="p-3 text-sm text-green-600 bg-green-50 dark:bg-green-950/50 rounded-md flex items-center gap-2">
-                      <Check className="h-4 w-4" />
-                      Configurações salvas com sucesso!
-                    </div>
-                  )}
+                <div className="space-y-2">
+                  <Label htmlFor="slug">Identificador (slug)</Label>
+                  <Input
+                    id="slug"
+                    type="text"
+                    placeholder="minha-empresa"
+                    value={slug}
+                    onChange={(e) =>
+                      setSlug(
+                        e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")
+                      )
+                    }
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Apenas letras minúsculas, números e hífens. Usado como
+                    identificador único.
+                  </p>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome da Organização</Label>
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Minha Empresa"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">Identificador (slug)</Label>
-                    <Input
-                      id="slug"
-                      type="text"
-                      placeholder="minha-empresa"
-                      value={slug}
-                      onChange={(e) =>
-                        setSlug(
-                          e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")
-                        )
-                      }
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Apenas letras minúsculas, números e hífens. Usado como
-                      identificador único.
-                    </p>
-                  </div>
-
-                  <div className="pt-4">
-                    <Button
-                      type="submit"
-                      disabled={saving || !hasChanges}
-                    >
-                      {saving ? "Salvando..." : "Salvar Alterações"}
-                    </Button>
-                  </div>
-                </form>
-              )}
+                <div className="pt-4">
+                  <Button
+                    type="submit"
+                    disabled={saving || !hasChanges}
+                  >
+                    {saving ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
 
@@ -395,7 +297,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Seletor de provedor padrao */}
+              {/* Seletor de provedor padrão */}
               {modelProviders.length > 0 && (
                 <div className="space-y-2">
                   <Label>Provedor Padrão</Label>
@@ -433,7 +335,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Formulario para adicionar novo provedor */}
+              {/* Formulário para adicionar novo provedor */}
               {availableProviders.length > 0 && (
                 <div className="space-y-4 pt-4 border-t">
                   <Label>Adicionar Provedor</Label>

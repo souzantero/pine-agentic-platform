@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -11,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import type { Prompt } from "./prompt-list";
 
 interface DeletePromptDialogProps {
@@ -73,13 +73,13 @@ export function DeletePromptDialog({
 
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleClose}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
+          <Button
+            variant="destructive"
             onClick={handleDelete}
             disabled={loading}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {loading ? "Excluindo..." : "Excluir"}
-          </AlertDialogAction>
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

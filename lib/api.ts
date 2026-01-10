@@ -70,8 +70,14 @@ async function request<T>(
     // Tenta parsear o JSON da resposta
     let data: T | ApiError | undefined;
     const contentType = response.headers.get("content-type");
-    if (contentType?.includes("application/json")) {
-      data = await response.json();
+    const contentLength = response.headers.get("content-length");
+
+    // Só tenta parsear JSON se houver conteúdo
+    if (contentType?.includes("application/json") && contentLength !== "0" && response.status !== 204) {
+      const text = await response.text();
+      if (text) {
+        data = JSON.parse(text);
+      }
     }
 
     if (!response.ok) {

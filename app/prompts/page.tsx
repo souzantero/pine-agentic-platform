@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { usePrompts, useSidebarThreads } from "@/lib/hooks";
 import { api } from "@/lib/api";
 import { Header } from "@/components/header";
-import { Sidebar, MobileSidebar, MobileThreadsDrawer, type Thread } from "@/components/sidebar";
+import { Sidebar, MobileSidebar, MobileThreadsDrawer } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,40 +17,27 @@ import {
   type Prompt,
 } from "@/components/prompts";
 import { FileText, Plus } from "lucide-react";
-
-// Tipo da resposta da API de threads
-interface ApiThread {
-  id: string;
-  title: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Tipo da resposta da API de prompts
-interface ApiPrompt {
-  id: string;
-  name: string;
-  content: string;
-  role: string;
-  createdById: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { ApiThread } from "@/lib/types";
 
 export default function PromptsPage() {
   const router = useRouter();
-  const { isLoggedIn, isLoading, hasOrganization, hasPermission, currentMembership } = useAuth();
+  const { isLoggedIn, isLoading: authLoading, hasOrganization, hasPermission, currentMembership } = useAuth();
   const orgId = currentMembership?.organizationId;
 
-  // Estados de threads para a sidebar
-  const [threads, setThreads] = useState<Thread[]>([]);
+  // Hooks
+  const { threads } = useSidebarThreads();
+  const {
+    prompts,
+    isLoading: promptsLoading,
+    createPrompt,
+    updatePrompt,
+    deletePrompt,
+  } = usePrompts();
+
+  // Estados de UI
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileThreadsOpen, setMobileThreadsOpen] = useState(false);
-
-  // Estados de prompts
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [loadingPrompts, setLoadingPrompts] = useState(true);
 
   // Dialog states
   const [createOpen, setCreateOpen] = useState(false);
@@ -60,74 +48,16 @@ export default function PromptsPage() {
   const canWrite = hasPermission("PROMPTS_WRITE");
   const canDelete = hasPermission("PROMPTS_DELETE");
 
-  // Redirect if not authenticated
+  // Redirect se não autenticado
   useEffect(() => {
-    if (!isLoading) {
+    if (!authLoading) {
       if (!isLoggedIn) {
         router.push("/login");
       } else if (!hasOrganization) {
         router.push("/onboarding");
       }
     }
-  }, [isLoading, isLoggedIn, hasOrganization, router]);
-
-  // Load threads for sidebar
-  const loadThreads = useCallback(async () => {
-    if (!orgId) return;
-
-    try {
-      const response = await api.get<ApiThread[]>(
-        `/organizations/${orgId}/threads`
-      );
-      if (response.error || !response.data) return;
-
-      const loadedThreads: Thread[] = response.data.map((t) => ({
-        id: t.id,
-        title: t.title || "Nova conversa",
-        updatedAt: new Date(t.updatedAt),
-      }));
-
-      setThreads(loadedThreads);
-    } catch (error) {
-      console.error("Erro ao carregar threads:", error);
-    }
-  }, [orgId]);
-
-  // Load prompts
-  const loadPrompts = useCallback(async () => {
-    if (!orgId) return;
-
-    try {
-      const response = await api.get<ApiPrompt[]>(
-        `/organizations/${orgId}/prompts`
-      );
-      if (response.error || !response.data) return;
-
-      setPrompts(response.data.map((p) => ({
-        id: p.id,
-        name: p.name,
-        content: p.content,
-        role: p.role as "SYSTEM" | "USER" | "ASSISTANT",
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt,
-        createdBy: {
-          id: p.createdById,
-          user: { id: p.createdById, name: "" },
-        },
-      })));
-    } catch (error) {
-      console.error("Failed to load prompts:", error);
-    } finally {
-      setLoadingPrompts(false);
-    }
-  }, [orgId]);
-
-  useEffect(() => {
-    if (isLoggedIn && hasOrganization) {
-      loadThreads();
-      loadPrompts();
-    }
-  }, [isLoggedIn, hasOrganization, loadThreads, loadPrompts]);
+  }, [authLoading, isLoggedIn, hasOrganization, router]);
 
   // Handle thread selection - navigate to home
   const handleSelectThread = (id: string) => {
@@ -159,23 +89,7 @@ export default function PromptsPage() {
     content: string,
     role: string
   ): Promise<{ error?: string }> => {
-    if (!orgId) return { error: "Organização não selecionada" };
-
-    try {
-      const response = await api.post<ApiPrompt>(
-        `/organizations/${orgId}/prompts`,
-        { name, content, role }
-      );
-
-      if (response.error) {
-        return { error: response.error };
-      }
-
-      loadPrompts();
-      return {};
-    } catch {
-      return { error: "Erro ao criar prompt" };
-    }
+    return await createPrompt({ name, content, role });
   };
 
   const handleEdit = async (
@@ -184,42 +98,11 @@ export default function PromptsPage() {
     content: string,
     role: string
   ): Promise<{ error?: string }> => {
-    if (!orgId) return { error: "Organização não selecionada" };
-
-    try {
-      const response = await api.put<ApiPrompt>(
-        `/organizations/${orgId}/prompts/${promptId}`,
-        { name, content, role }
-      );
-
-      if (response.error) {
-        return { error: response.error };
-      }
-
-      loadPrompts();
-      return {};
-    } catch {
-      return { error: "Erro ao atualizar prompt" };
-    }
+    return await updatePrompt(promptId, { name, content, role });
   };
 
   const handleDelete = async (promptId: string): Promise<{ error?: string }> => {
-    if (!orgId) return { error: "Organização não selecionada" };
-
-    try {
-      const response = await api.delete(
-        `/organizations/${orgId}/prompts/${promptId}`
-      );
-
-      if (response.error) {
-        return { error: response.error };
-      }
-
-      loadPrompts();
-      return {};
-    } catch {
-      return { error: "Erro ao excluir prompt" };
-    }
+    return await deletePrompt(promptId);
   };
 
   const openEdit = (prompt: Prompt) => {
@@ -231,6 +114,8 @@ export default function PromptsPage() {
     setSelectedPrompt(prompt);
     setDeleteOpen(true);
   };
+
+  const isLoading = authLoading || promptsLoading;
 
   if (isLoading || !isLoggedIn || !hasOrganization) {
     return null;
@@ -302,7 +187,7 @@ export default function PromptsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {loadingPrompts ? (
+                {promptsLoading ? (
                   <div className="flex justify-center py-8 text-muted-foreground">
                     Carregando...
                   </div>

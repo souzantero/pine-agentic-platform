@@ -42,6 +42,6 @@ export const basicAgent: AgentDefinition = {
     provider: null,
     model: "",
     systemPromptId: null,
-    temperature: 0.7,
+    temperature: 0.1,
   } as BasicAgentConfig,
 };

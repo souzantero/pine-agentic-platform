@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { api } from "@/lib/api";
+import { usePublicInvite } from "@/lib/hooks";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,89 +15,52 @@ import {
 } from "@/components/ui/card";
 import { Users, CheckCircle, XCircle, Clock } from "lucide-react";
 
-interface InviteInfo {
-  organization: {
-    name: string;
-    slug: string;
-  };
-  role: {
-    name: string;
-  };
-  createdBy: {
-    name: string;
-  };
-  expiresAt: string;
-  isExpired: boolean;
-  isUsed: boolean;
-}
-
 export default function InvitePage({
   params,
 }: {
   params: Promise<{ token: string }>;
 }) {
   const { token } = use(params);
-  const [inviteInfo, setInviteInfo] = useState<InviteInfo | null>(null);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const { isLoggedIn, isLoading: authLoading } = useAuth();
+
+  // Hook para gerenciar convite
+  const {
+    invite: inviteInfo,
+    isLoading: inviteLoading,
+    error: inviteError,
+    acceptInvite,
+  } = usePublicInvite(token);
+
+  // Estados locais para ação de aceitar
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const router = useRouter();
-  const { isLoggedIn, isLoading, refreshSession } = useAuth();
-
-  // Buscar informações do convite
-  useEffect(() => {
-    async function fetchInvite() {
-      try {
-        const response = await api.get<InviteInfo>(`/invites/${token}`);
-
-        if (response.error) {
-          setError(response.error || "Erro ao carregar convite");
-          setLoading(false);
-          return;
-        }
-
-        if (response.data) {
-          setInviteInfo(response.data);
-        }
-      } catch {
-        setError("Erro ao carregar convite");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchInvite();
-  }, [token]);
 
   const handleAccept = async () => {
     setError(null);
     setAccepting(true);
 
-    try {
-      const response = await api.post(`/invites/${token}/accept`);
+    const result = await acceptInvite();
 
-      if (response.error) {
-        setError(response.error || "Erro ao aceitar convite");
-        setAccepting(false);
-        return;
-      }
-
-      setSuccess(true);
-      await refreshSession();
-
-      // Redirecionar após 2 segundos
-      setTimeout(() => {
-        router.push("/");
-      }, 2000);
-    } catch {
-      setError("Erro ao aceitar convite");
+    if (result.error) {
+      setError(result.error);
       setAccepting(false);
+      return;
     }
+
+    setSuccess(true);
+
+    // Redirecionar após 2 segundos
+    setTimeout(() => {
+      router.push("/");
+    }, 2000);
   };
 
+  const isLoading = inviteLoading || authLoading;
+
   // Loading state
-  if (loading || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md">
@@ -114,7 +77,7 @@ export default function InvitePage({
   }
 
   // Error state (invite not found)
-  if (error && !inviteInfo) {
+  if (inviteError && !inviteInfo) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md">
@@ -127,7 +90,7 @@ export default function InvitePage({
             <CardTitle className="text-2xl font-bold text-center">
               Convite Inválido
             </CardTitle>
-            <CardDescription className="text-center">{error}</CardDescription>
+            <CardDescription className="text-center">{inviteError}</CardDescription>
           </CardHeader>
           <CardFooter className="pt-2">
             <Button

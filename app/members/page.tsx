@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { api } from "@/lib/api";
+import { useMembers, useInvites, useRoles } from "@/lib/hooks";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   MemberList,
   CreateInviteDialog,
@@ -15,27 +14,28 @@ import {
   RemoveMemberDialog,
   InvitesList,
   type Member,
-  type Invite,
 } from "@/components/members";
 import { Users, Link as LinkIcon, ArrowLeft } from "lucide-react";
 
-interface Role {
-  id: string;
-  name: string;
-  description: string | null;
-  isSystemRole: boolean;
-}
-
 export default function MembersPage() {
   const router = useRouter();
-  const { user, isLoggedIn, isLoading, hasOrganization, hasPermission, currentMembership } = useAuth();
-  const orgId = currentMembership?.organizationId;
+  const { user, isLoggedIn, isLoading: authLoading, hasOrganization, hasPermission } = useAuth();
 
-  const [members, setMembers] = useState<Member[]>([]);
-  const [invites, setInvites] = useState<Invite[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [loadingMembers, setLoadingMembers] = useState(true);
-  const [loadingInvites, setLoadingInvites] = useState(true);
+  // Hooks
+  const {
+    members,
+    isLoading: membersLoading,
+    changeRole,
+    removeMember,
+  } = useMembers();
+
+  const {
+    invites,
+    isLoading: invitesLoading,
+    createInvite,
+  } = useInvites();
+
+  const { roles } = useRoles();
 
   // Dialog states
   const [createInviteOpen, setCreateInviteOpen] = useState(false);
@@ -46,149 +46,33 @@ export default function MembersPage() {
   const canInvite = hasPermission("MEMBERS_INVITE");
   const canManage = hasPermission("MEMBERS_MANAGE");
 
-  // Redirect if not authenticated
+  // Redirect se não autenticado
   useEffect(() => {
-    if (!isLoading) {
+    if (!authLoading) {
       if (!isLoggedIn) {
         router.push("/login");
       } else if (!hasOrganization) {
         router.push("/onboarding");
       }
     }
-  }, [isLoading, isLoggedIn, hasOrganization, router]);
-
-  // Load members
-  const loadMembers = useCallback(async () => {
-    if (!orgId) return;
-
-    try {
-      const response = await api.get<Member[]>(
-        `/organizations/${orgId}/members`
-      );
-      if (response.error || !response.data) return;
-
-      setMembers(response.data);
-    } catch (error) {
-      console.error("Failed to load members:", error);
-    } finally {
-      setLoadingMembers(false);
-    }
-  }, [orgId]);
-
-  // Load invites
-  const loadInvites = useCallback(async () => {
-    if (!canInvite || !orgId) {
-      setLoadingInvites(false);
-      return;
-    }
-
-    try {
-      const response = await api.get<Invite[]>(
-        `/organizations/${orgId}/invites`
-      );
-      if (response.error || !response.data) return;
-
-      setInvites(response.data);
-    } catch (error) {
-      console.error("Failed to load invites:", error);
-    } finally {
-      setLoadingInvites(false);
-    }
-  }, [canInvite, orgId]);
-
-  // Load roles
-  const loadRoles = useCallback(async () => {
-    if (!orgId) return;
-
-    try {
-      const response = await api.get<Role[]>(
-        `/organizations/${orgId}/roles`
-      );
-      if (response.error || !response.data) return;
-
-      setRoles(response.data);
-    } catch (error) {
-      console.error("Failed to load roles:", error);
-    }
-  }, [orgId]);
-
-  useEffect(() => {
-    if (isLoggedIn && hasOrganization) {
-      loadMembers();
-      loadInvites();
-      loadRoles();
-    }
-  }, [isLoggedIn, hasOrganization, loadMembers, loadInvites, loadRoles]);
+  }, [authLoading, isLoggedIn, hasOrganization, router]);
 
   // Handlers
   const handleCreateInvite = async (
     roleId: string
   ): Promise<{ inviteLink?: string; error?: string }> => {
-    if (!orgId) return { error: "Organização não selecionada" };
-
-    try {
-      const response = await api.post<{ inviteLink: string }>(
-        `/organizations/${orgId}/invites`,
-        { roleId }
-      );
-
-      if (response.error) {
-        return { error: response.error };
-      }
-
-      // Reload invites
-      loadInvites();
-
-      return { inviteLink: response.data?.inviteLink };
-    } catch {
-      return { error: "Erro ao criar convite" };
-    }
+    return await createInvite(roleId);
   };
 
   const handleChangeRole = async (
     memberId: string,
     roleId: string
   ): Promise<{ error?: string }> => {
-    if (!orgId) return { error: "Organização não selecionada" };
-
-    try {
-      const response = await api.put(
-        `/organizations/${orgId}/members/${memberId}/role`,
-        { roleId }
-      );
-
-      if (response.error) {
-        return { error: response.error };
-      }
-
-      // Reload members
-      loadMembers();
-
-      return {};
-    } catch {
-      return { error: "Erro ao alterar função" };
-    }
+    return await changeRole(memberId, roleId);
   };
 
   const handleRemove = async (memberId: string): Promise<{ error?: string }> => {
-    if (!orgId) return { error: "Organização não selecionada" };
-
-    try {
-      const response = await api.delete(
-        `/organizations/${orgId}/members/${memberId}`
-      );
-
-      if (response.error) {
-        return { error: response.error };
-      }
-
-      // Reload members
-      loadMembers();
-
-      return {};
-    } catch {
-      return { error: "Erro ao remover membro" };
-    }
+    return await removeMember(memberId);
   };
 
   const openChangeRole = (member: Member) => {
@@ -200,6 +84,8 @@ export default function MembersPage() {
     setSelectedMember(member);
     setRemoveOpen(true);
   };
+
+  const isLoading = authLoading || membersLoading;
 
   if (isLoading || !isLoggedIn || !hasOrganization) {
     return null;
@@ -251,7 +137,7 @@ export default function MembersPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {loadingMembers ? (
+              {membersLoading ? (
                 <div className="flex justify-center py-8 text-muted-foreground">
                   Carregando...
                 </div>
@@ -276,7 +162,7 @@ export default function MembersPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {loadingInvites ? (
+                {invitesLoading ? (
                   <div className="flex justify-center py-8 text-muted-foreground">
                     Carregando...
                   </div>
