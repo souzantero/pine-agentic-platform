@@ -1,20 +1,27 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth";
-import { api } from "@/lib/api";
-import type { Organization, UpdateOrganizationData, MutationResult } from "@/lib/types";
+import { useSession } from "@/lib/session";
+import { api, setCurrentOrgId } from "@/lib/api";
+import type {
+  Organization,
+  UpdateOrganizationData,
+  CreateOrganizationData,
+  CreateOrganizationResult,
+  MutationResult,
+} from "@/lib/types";
 
 interface UseOrganizationReturn {
   organization: Organization | null;
   isLoading: boolean;
   error: string | null;
+  createOrganization: (data: CreateOrganizationData) => Promise<CreateOrganizationResult>;
   updateOrganization: (data: UpdateOrganizationData) => Promise<MutationResult>;
   refresh: () => Promise<void>;
 }
 
 export function useOrganization(): UseOrganizationReturn {
-  const { currentMembership, refreshSession } = useAuth();
+  const { currentMembership, refreshSession } = useSession();
   const orgId = currentMembership?.organizationId;
 
   const [organization, setOrganization] = useState<Organization | null>(null);
@@ -50,6 +57,33 @@ export function useOrganization(): UseOrganizationReturn {
   useEffect(() => {
     loadOrganization();
   }, [loadOrganization]);
+
+  const createOrganization = useCallback(
+    async (data: CreateOrganizationData): Promise<CreateOrganizationResult> => {
+      try {
+        const response = await api.post<Organization>("/organizations", data);
+
+        if (response.error) {
+          return { error: response.error };
+        }
+
+        const newOrg = response.data;
+        if (newOrg) {
+          // Definir a nova org como atual no localStorage
+          setCurrentOrgId(newOrg.id);
+          setOrganization(newOrg);
+        }
+
+        // Recarregar sessão para atualizar memberships
+        await refreshSession();
+
+        return { organization: newOrg };
+      } catch {
+        return { error: "Erro ao criar organização" };
+      }
+    },
+    [refreshSession]
+  );
 
   const updateOrganization = useCallback(
     async (data: UpdateOrganizationData): Promise<MutationResult> => {
@@ -91,6 +125,7 @@ export function useOrganization(): UseOrganizationReturn {
     organization,
     isLoading,
     error,
+    createOrganization,
     updateOrganization,
     refresh,
   };

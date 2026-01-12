@@ -1,11 +1,10 @@
 import uuid
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import Session, select
 
 from src.auth import CurrentUser, check_permission, get_user_membership
-from src.database import get_session
+from src.database import DatabaseSession
 from src.entities import (
     ModelProvider,
     Organization,
@@ -22,8 +21,6 @@ from src.schemas import (
 )
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
-
-SessionDep = Annotated[Session, Depends(get_session)]
 
 
 # Permissoes padrao para role Admin
@@ -46,7 +43,7 @@ ADMIN_PERMISSIONS = [
 ]
 
 
-def create_admin_role(session: Session, organization_id: uuid.UUID) -> Role:
+def create_admin_role(db: Session, organization_id: uuid.UUID) -> Role:
     """Cria a role Admin padrao para uma organizacao."""
     role = Role(
         organization_id=organization_id,
@@ -55,8 +52,8 @@ def create_admin_role(session: Session, organization_id: uuid.UUID) -> Role:
         description="Administrador com acesso total",
         is_system_role=True,
     )
-    session.add(role)
-    session.flush()  # Para obter o ID da role
+    db.add(role)
+    db.flush()  # Para obter o ID da role
 
     # Adiciona todas as permissoes de admin
     for permission in ADMIN_PERMISSIONS:
@@ -64,7 +61,7 @@ def create_admin_role(session: Session, organization_id: uuid.UUID) -> Role:
             role_id=role.id,
             permission=permission,
         )
-        session.add(role_permission)
+        db.add(role_permission)
 
     return role
 
@@ -73,12 +70,12 @@ def create_admin_role(session: Session, organization_id: uuid.UUID) -> Role:
 def create_organization(
     payload: CreateOrganizationRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Cria uma nova organizacao e adiciona o usuario como owner."""
     # Verifica se slug ja existe
     statement = select(Organization).where(Organization.slug == payload.slug)
-    existing_org = session.exec(statement).first()
+    existing_org = db.exec(statement).first()
 
     if existing_org:
         raise HTTPException(
@@ -91,11 +88,11 @@ def create_organization(
         name=payload.name,
         slug=payload.slug,
     )
-    session.add(organization)
-    session.flush()  # Para obter o ID
+    db.add(organization)
+    db.flush()  # Para obter o ID
 
     # Cria a role Admin padrao
-    admin_role = create_admin_role(session, organization.id)
+    admin_role = create_admin_role(db, organization.id)
 
     # Adiciona o usuario como membro owner
     member = OrganizationMember(
@@ -104,9 +101,9 @@ def create_organization(
         role_id=admin_role.id,
         is_owner=True,
     )
-    session.add(member)
-    session.commit()
-    session.refresh(organization)
+    db.add(member)
+    db.commit()
+    db.refresh(organization)
 
     return OrganizationDetailResponse(
         id=organization.id,
@@ -122,18 +119,18 @@ def create_organization(
 def get_organization(
     organization_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Retorna detalhes de uma organizacao (usuario deve ser membro)."""
     # Verifica se usuario e membro
-    membership = get_user_membership(session, current_user.id, organization_id)
+    membership = get_user_membership(db, current_user.id, organization_id)
     if not membership:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Voce nao e membro desta organizacao",
         )
 
-    organization = session.get(Organization, organization_id)
+    organization = db.get(Organization, organization_id)
     if not organization:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -155,17 +152,17 @@ def update_organization(
     organization_id: uuid.UUID,
     payload: UpdateOrganizationRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Atualiza configuracoes da organizacao (requer ORGANIZATION_MANAGE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
+    if not check_permission(db, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao ORGANIZATION_MANAGE necessaria",
         )
 
-    organization = session.get(Organization, organization_id)
+    organization = db.get(Organization, organization_id)
     if not organization:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -182,7 +179,7 @@ def update_organization(
             Organization.slug == payload.slug,
             Organization.id != organization_id,
         )
-        existing = session.exec(statement).first()
+        existing = db.exec(statement).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -199,9 +196,9 @@ def update_organization(
                 detail=f"Provedor invalido. Valores aceitos: {[p.value for p in ModelProvider]}",
             )
 
-    session.add(organization)
-    session.commit()
-    session.refresh(organization)
+    db.add(organization)
+    db.commit()
+    db.refresh(organization)
 
     return OrganizationDetailResponse(
         id=organization.id,

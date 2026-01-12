@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session, select
 
-from src.database import get_session
+from src.database import DatabaseSession
 from src.entities import Organization, OrganizationMember, Permission, RolePermission, User
 from src.env import jwt_algorithm, jwt_expiration_hours, jwt_secret
 
@@ -56,7 +56,7 @@ def decode_token(token: str) -> dict | None:
 # Dependency para obter o usuario atual
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer_scheme)],
-    session: Annotated[Session, Depends(get_session)],
+    db: DatabaseSession,
 ) -> User:
     """Dependency que retorna o usuario autenticado ou 401."""
     credentials_exception = HTTPException(
@@ -73,7 +73,7 @@ async def get_current_user(
     if user_id is None:
         raise credentials_exception
 
-    user = session.get(User, uuid.UUID(user_id))
+    user = db.get(User, uuid.UUID(user_id))
     if user is None:
         raise credentials_exception
 
@@ -84,33 +84,33 @@ async def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-def get_user_permissions(session: Session, user_id: uuid.UUID, organization_id: uuid.UUID) -> set[Permission]:
+def get_user_permissions(db: Session, user_id: uuid.UUID, organization_id: uuid.UUID) -> set[Permission]:
     """Retorna o conjunto de permissoes do usuario na organizacao."""
     # Busca o membership do usuario na organizacao
     member_statement = select(OrganizationMember).where(
         OrganizationMember.user_id == user_id,
         OrganizationMember.organization_id == organization_id,
     )
-    member = session.exec(member_statement).first()
+    member = db.exec(member_statement).first()
 
     if not member:
         return set()
 
     # Busca as permissoes da role do membro
     permissions_statement = select(RolePermission).where(RolePermission.role_id == member.role_id)
-    role_permissions = session.exec(permissions_statement).all()
+    role_permissions = db.exec(permissions_statement).all()
 
     return {rp.permission for rp in role_permissions}
 
 
 def check_permission(
-    session: Session,
+    db: Session,
     user_id: uuid.UUID,
     organization_id: uuid.UUID,
     required_permission: Permission,
 ) -> bool:
     """Verifica se o usuario tem a permissao na organizacao."""
-    permissions = get_user_permissions(session, user_id, organization_id)
+    permissions = get_user_permissions(db, user_id, organization_id)
     return required_permission in permissions
 
 
@@ -122,10 +122,10 @@ def require_permission(required_permission: Permission):
 
     async def permission_checker(
         current_user: CurrentUser,
-        session: Annotated[Session, Depends(get_session)],
+        db: DatabaseSession,
         organization_id: uuid.UUID,
     ) -> User:
-        if not check_permission(session, current_user.id, organization_id, required_permission):
+        if not check_permission(db, current_user.id, organization_id, required_permission):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Permissao {required_permission.value} necessaria",
@@ -136,16 +136,16 @@ def require_permission(required_permission: Permission):
 
 
 def get_user_membership(
-    session: Session, user_id: uuid.UUID, organization_id: uuid.UUID
+    db: Session, user_id: uuid.UUID, organization_id: uuid.UUID
 ) -> OrganizationMember | None:
     """Retorna o membership do usuario na organizacao."""
     statement = select(OrganizationMember).where(
         OrganizationMember.user_id == user_id,
         OrganizationMember.organization_id == organization_id,
     )
-    return session.exec(statement).first()
+    return db.exec(statement).first()
 
 
-def get_organization_by_id(session: Session, organization_id: uuid.UUID) -> Organization | None:
+def get_organization_by_id(db: Session, organization_id: uuid.UUID) -> Organization | None:
     """Retorna a organizacao pelo ID."""
-    return session.get(Organization, organization_id)
+    return db.get(Organization, organization_id)

@@ -5,18 +5,17 @@ from typing import Annotated, Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from sqlmodel import Session, col, select
+from sqlmodel import col, select
 
 from src.agent import build_agent
 from src.auth import CurrentUser, check_permission, get_user_membership
-from src.database import get_checkpoint_saver, get_session
+from src.database import DatabaseSession, get_checkpoint_saver
 from src.entities import Permission, Thread
 from src.helpers import agent_messages_to_list, chunk_to_text, get_config
 from src.schemas import CreateThreadRequest, RunPayload, ThreadResponse, UpdateThreadRequest
 
 router = APIRouter(prefix="/organizations/{organization_id}/threads", tags=["threads"])
 
-SessionDep = Annotated[Session, Depends(get_session)]
 CheckpointSaverDep = Annotated[AsyncPostgresSaver, Depends(get_checkpoint_saver)]
 
 
@@ -24,13 +23,13 @@ CheckpointSaverDep = Annotated[AsyncPostgresSaver, Depends(get_checkpoint_saver)
 def list_threads(
     organization_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 50,
 ):
     """Lista threads da organizacao (requer THREADS_READ)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.THREADS_READ):
+    if not check_permission(db, current_user.id, organization_id, Permission.THREADS_READ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao THREADS_READ necessaria",
@@ -44,7 +43,7 @@ def list_threads(
         .offset(offset)
         .limit(limit)
     )
-    threads = session.exec(statement).all()
+    threads = db.exec(statement).all()
 
     return [
         ThreadResponse(
@@ -63,18 +62,18 @@ def create_thread(
     organization_id: uuid.UUID,
     payload: CreateThreadRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Cria uma nova thread (requer THREADS_WRITE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.THREADS_WRITE):
+    if not check_permission(db, current_user.id, organization_id, Permission.THREADS_WRITE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao THREADS_WRITE necessaria",
         )
 
     # Busca o membership do usuario
-    membership = get_user_membership(session, current_user.id, organization_id)
+    membership = get_user_membership(db, current_user.id, organization_id)
     if not membership:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -87,9 +86,9 @@ def create_thread(
         created_by_id=membership.id,
         title=payload.title,
     )
-    session.add(thread)
-    session.commit()
-    session.refresh(thread)
+    db.add(thread)
+    db.commit()
+    db.refresh(thread)
 
     return ThreadResponse(
         id=thread.id,
@@ -105,18 +104,18 @@ def get_thread(
     organization_id: uuid.UUID,
     thread_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Retorna detalhes de uma thread (requer THREADS_READ)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.THREADS_READ):
+    if not check_permission(db, current_user.id, organization_id, Permission.THREADS_READ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao THREADS_READ necessaria",
         )
 
     # Busca a thread
-    thread = session.get(Thread, thread_id)
+    thread = db.get(Thread, thread_id)
     if not thread or thread.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -138,18 +137,18 @@ def update_thread(
     thread_id: uuid.UUID,
     payload: UpdateThreadRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Atualiza uma thread (requer THREADS_WRITE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.THREADS_WRITE):
+    if not check_permission(db, current_user.id, organization_id, Permission.THREADS_WRITE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao THREADS_WRITE necessaria",
         )
 
     # Busca a thread
-    thread = session.get(Thread, thread_id)
+    thread = db.get(Thread, thread_id)
     if not thread or thread.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -160,9 +159,9 @@ def update_thread(
     if payload.title is not None:
         thread.title = payload.title
 
-    session.add(thread)
-    session.commit()
-    session.refresh(thread)
+    db.add(thread)
+    db.commit()
+    db.refresh(thread)
 
     return ThreadResponse(
         id=thread.id,
@@ -178,26 +177,26 @@ def delete_thread(
     organization_id: uuid.UUID,
     thread_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Deleta uma thread (requer THREADS_DELETE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.THREADS_DELETE):
+    if not check_permission(db, current_user.id, organization_id, Permission.THREADS_DELETE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao THREADS_DELETE necessaria",
         )
 
     # Busca a thread
-    thread = session.get(Thread, thread_id)
+    thread = db.get(Thread, thread_id)
     if not thread or thread.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Thread nao encontrada",
         )
 
-    session.delete(thread)
-    session.commit()
+    db.delete(thread)
+    db.commit()
 
 @router.get("/{thread_id}/state/messages")
 async def get_thread_messages(

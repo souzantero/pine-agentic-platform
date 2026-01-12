@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { signIn, isLoggedIn, isLoading, hasOrganization } = useAuth();
+  const { signIn, isLoggedIn, isLoading, hasOrganization } = useSession();
 
   // Redirecionar quando o usuário estiver logado
   useEffect(() => {

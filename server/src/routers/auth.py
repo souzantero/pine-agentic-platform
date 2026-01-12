@@ -1,10 +1,8 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, HTTPException, status
+from sqlmodel import select
 
 from src.auth import CurrentUser, create_access_token, hash_password, verify_password
-from src.database import get_session
+from src.database import DatabaseSession
 from src.entities import OrganizationMember, RolePermission, User
 from src.schemas import (
     LoginRequest,
@@ -19,15 +17,13 @@ from src.schemas import (
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-SessionDep = Annotated[Session, Depends(get_session)]
-
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, session: SessionDep):
+def register(payload: RegisterRequest, db: DatabaseSession):
     """Registra um novo usuario."""
     # Verifica se email ja existe
     statement = select(User).where(User.email == payload.email)
-    existing_user = session.exec(statement).first()
+    existing_user = db.exec(statement).first()
 
     if existing_user:
         raise HTTPException(
@@ -41,9 +37,9 @@ def register(payload: RegisterRequest, session: SessionDep):
         name=payload.name,
         password_hash=hash_password(payload.password),
     )
-    session.add(user)
-    session.commit()
-    session.refresh(user)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
 
     # Gera token
     access_token = create_access_token(str(user.id))
@@ -52,11 +48,11 @@ def register(payload: RegisterRequest, session: SessionDep):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, session: SessionDep):
+def login(payload: LoginRequest, db: DatabaseSession):
     """Autentica um usuario e retorna o token JWT."""
     # Busca usuario pelo email
     statement = select(User).where(User.email == payload.email)
-    user = session.exec(statement).first()
+    user = db.exec(statement).first()
 
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(
@@ -72,21 +68,21 @@ def login(payload: LoginRequest, session: SessionDep):
 
 
 @router.get("/me", response_model=MeResponse)
-def get_me(current_user: CurrentUser, session: SessionDep):
+def get_me(current_user: CurrentUser, db: DatabaseSession):
     """Retorna o usuario autenticado com suas memberships."""
     # Busca memberships do usuario com org e role
     statement = select(OrganizationMember).where(OrganizationMember.user_id == current_user.id)
-    memberships = session.exec(statement).all()
+    memberships = db.exec(statement).all()
 
     # Monta response com relacionamentos
     membership_responses = []
     for membership in memberships:
         # Carrega relacionamentos
-        session.refresh(membership, ["organization", "role"])
+        db.refresh(membership, ["organization", "role"])
 
         # Busca permissoes da role
         perm_statement = select(RolePermission).where(RolePermission.role_id == membership.role.id)
-        role_permissions = session.exec(perm_statement).all()
+        role_permissions = db.exec(perm_statement).all()
         permissions = [rp.permission.value for rp in role_permissions]
 
         membership_responses.append(

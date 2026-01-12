@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import type { ModelOption, ApiModelsResponse } from "@/lib/types";
 
@@ -16,7 +16,7 @@ interface UseModelsReturn {
 }
 
 export function useModels(): UseModelsReturn {
-  const { currentMembership } = useAuth();
+  const { currentMembership } = useSession();
   const orgId = currentMembership?.organizationId;
 
   const [models, setModels] = useState<ModelOption[]>([]);

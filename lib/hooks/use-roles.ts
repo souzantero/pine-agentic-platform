@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import type { Role } from "@/lib/types";
 
@@ -13,7 +13,7 @@ interface UseRolesReturn {
 }
 
 export function useRoles(): UseRolesReturn {
-  const { currentMembership } = useAuth();
+  const { currentMembership } = useSession();
   const orgId = currentMembership?.organizationId;
 
   const [roles, setRoles] = useState<Role[]>([]);

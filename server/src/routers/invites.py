@@ -1,13 +1,13 @@
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, List
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, HTTPException, status
+from sqlmodel import select
 
 from src.auth import CurrentUser, check_permission
-from src.database import get_session
+from src.database import DatabaseSession
 from src.entities import Organization, OrganizationInvite, OrganizationMember, Permission, Role
 from src.schemas import (
     CreateInviteRequest,
@@ -23,8 +23,6 @@ from src.schemas import (
 )
 
 router = APIRouter(tags=["invites"])
-
-SessionDep = Annotated[Session, Depends(get_session)]
 
 
 def generate_invite_token() -> str:
@@ -45,11 +43,11 @@ def get_invite_link(token: str) -> str:
 def list_invites(
     organization_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Lista convites pendentes da organizacao (requer MEMBERS_INVITE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.MEMBERS_INVITE):
+    if not check_permission(db, current_user.id, organization_id, Permission.MEMBERS_INVITE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao MEMBERS_INVITE necessaria",
@@ -65,7 +63,7 @@ def list_invites(
         )
         .order_by(OrganizationInvite.created_at.desc())
     )
-    invites = session.exec(statement).all()
+    invites = db.exec(statement).all()
 
     result = []
     for invite in invites:
@@ -77,7 +75,7 @@ def list_invites(
             continue  # Pula convites expirados
 
         # Carrega relacionamentos
-        session.refresh(invite, ["role", "created_by"])
+        db.refresh(invite, ["role", "created_by"])
 
         result.append(
             InviteListItemResponse(
@@ -111,18 +109,18 @@ def create_invite(
     organization_id: uuid.UUID,
     payload: CreateInviteRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Cria um convite para a organizacao (requer MEMBERS_INVITE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.MEMBERS_INVITE):
+    if not check_permission(db, current_user.id, organization_id, Permission.MEMBERS_INVITE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao MEMBERS_INVITE necessaria",
         )
 
     # Verifica se a organizacao existe
-    organization = session.get(Organization, organization_id)
+    organization = db.get(Organization, organization_id)
     if not organization:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -130,7 +128,7 @@ def create_invite(
         )
 
     # Verifica se a role existe e pertence a organizacao
-    role = session.get(Role, payload.role_id)
+    role = db.get(Role, payload.role_id)
     if not role or role.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -145,9 +143,9 @@ def create_invite(
         created_by_id=current_user.id,
         expires_at=datetime.now(UTC) + timedelta(days=payload.expires_in_days),
     )
-    session.add(invite)
-    session.commit()
-    session.refresh(invite)
+    db.add(invite)
+    db.commit()
+    db.refresh(invite)
 
     return InviteResponse(
         id=invite.id,
@@ -170,11 +168,11 @@ def create_invite(
 
 
 @router.get("/invites/{token}", response_model=InviteInfoResponse)
-def get_invite_info(token: str, session: SessionDep):
+def get_invite_info(token: str, db: DatabaseSession):
     """Retorna informacoes publicas do convite (para pagina de aceite)."""
     # Busca o convite pelo token
     statement = select(OrganizationInvite).where(OrganizationInvite.token == token)
-    invite = session.exec(statement).first()
+    invite = db.exec(statement).first()
 
     if not invite:
         raise HTTPException(
@@ -183,7 +181,7 @@ def get_invite_info(token: str, session: SessionDep):
         )
 
     # Carrega relacionamentos
-    session.refresh(invite, ["organization", "role", "created_by"])
+    db.refresh(invite, ["organization", "role", "created_by"])
 
     now = datetime.now(UTC)
     # Compara como naive datetime se expires_at nao tem timezone
@@ -211,11 +209,11 @@ def get_invite_info(token: str, session: SessionDep):
 
 
 @router.post("/invites/{token}/accept", status_code=status.HTTP_201_CREATED)
-def accept_invite(token: str, current_user: CurrentUser, session: SessionDep):
+def accept_invite(token: str, current_user: CurrentUser, db: DatabaseSession):
     """Aceita um convite e adiciona o usuario a organizacao."""
     # Busca o convite pelo token
     statement = select(OrganizationInvite).where(OrganizationInvite.token == token)
-    invite = session.exec(statement).first()
+    invite = db.exec(statement).first()
 
     if not invite:
         raise HTTPException(
@@ -246,7 +244,7 @@ def accept_invite(token: str, current_user: CurrentUser, session: SessionDep):
         OrganizationMember.user_id == current_user.id,
         OrganizationMember.organization_id == invite.organization_id,
     )
-    existing_member = session.exec(member_statement).first()
+    existing_member = db.exec(member_statement).first()
 
     if existing_member:
         raise HTTPException(
@@ -261,13 +259,13 @@ def accept_invite(token: str, current_user: CurrentUser, session: SessionDep):
         role_id=invite.role_id,
         is_owner=False,
     )
-    session.add(member)
+    db.add(member)
 
     # Marca convite como usado
     invite.used_at = now
     invite.used_by_id = current_user.id
-    session.add(invite)
+    db.add(invite)
 
-    session.commit()
+    db.commit()
 
     return {"message": "Convite aceito com sucesso"}

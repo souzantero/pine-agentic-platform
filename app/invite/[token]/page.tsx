@@ -2,7 +2,7 @@
 
 import { useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { usePublicInvite } from "@/lib/hooks";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,7 @@ export default function InvitePage({
 }) {
   const { token } = use(params);
   const router = useRouter();
-  const { isLoggedIn, isLoading: authLoading } = useAuth();
+  const { isLoggedIn, isLoading: authLoading } = useSession();
 
   // Hook para gerenciar convite
   const {

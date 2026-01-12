@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { useThreads, usePrompts, useModels } from "@/lib/hooks";
 import { Header } from "@/components/header";
 import { Sidebar, MobileSidebar, MobileThreadsDrawer } from "@/components/sidebar";
@@ -13,7 +13,7 @@ import type { Message } from "@/lib/types";
 
 export default function Home() {
   const router = useRouter();
-  const { isLoggedIn, isLoading: authLoading, hasOrganization } = useAuth();
+  const { isLoggedIn, isLoading: authLoading, hasOrganization } = useSession();
 
   // Hooks
   const {

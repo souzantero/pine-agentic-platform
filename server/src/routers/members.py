@@ -1,11 +1,11 @@
 import uuid
-from typing import Annotated, List
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, HTTPException, status
+from sqlmodel import select
 
 from src.auth import CurrentUser, check_permission, get_user_membership
-from src.database import get_session
+from src.database import DatabaseSession
 from src.entities import OrganizationMember, Permission, Role
 from src.schemas import (
     MemberDetailResponse,
@@ -16,18 +16,16 @@ from src.schemas import (
 
 router = APIRouter(prefix="/organizations/{organization_id}/members", tags=["members"])
 
-SessionDep = Annotated[Session, Depends(get_session)]
-
 
 @router.get("", response_model=List[MemberDetailResponse])
 def list_members(
     organization_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Lista todos os membros da organizacao (requer MEMBERS_READ)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.MEMBERS_READ):
+    if not check_permission(db, current_user.id, organization_id, Permission.MEMBERS_READ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao MEMBERS_READ necessaria",
@@ -37,12 +35,12 @@ def list_members(
     statement = select(OrganizationMember).where(
         OrganizationMember.organization_id == organization_id
     )
-    members = session.exec(statement).all()
+    members = db.exec(statement).all()
 
     # Monta response com relacionamentos
     result = []
     for member in members:
-        session.refresh(member, ["user", "role"])
+        db.refresh(member, ["user", "role"])
         result.append(
             MemberDetailResponse(
                 id=member.id,
@@ -69,18 +67,18 @@ def remove_member(
     organization_id: uuid.UUID,
     member_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Remove um membro da organizacao (requer MEMBERS_MANAGE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.MEMBERS_MANAGE):
+    if not check_permission(db, current_user.id, organization_id, Permission.MEMBERS_MANAGE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao MEMBERS_MANAGE necessaria",
         )
 
     # Busca o membro
-    member = session.get(OrganizationMember, member_id)
+    member = db.get(OrganizationMember, member_id)
     if not member or member.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -101,8 +99,8 @@ def remove_member(
             detail="Nao e possivel remover a si mesmo",
         )
 
-    session.delete(member)
-    session.commit()
+    db.delete(member)
+    db.commit()
 
 
 @router.put("/{member_id}/role", response_model=MemberDetailResponse)
@@ -111,18 +109,18 @@ def update_member_role(
     member_id: uuid.UUID,
     payload: UpdateMemberRoleRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Atualiza a role de um membro (requer MEMBERS_MANAGE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.MEMBERS_MANAGE):
+    if not check_permission(db, current_user.id, organization_id, Permission.MEMBERS_MANAGE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao MEMBERS_MANAGE necessaria",
         )
 
     # Busca o membro
-    member = session.get(OrganizationMember, member_id)
+    member = db.get(OrganizationMember, member_id)
     if not member or member.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -130,7 +128,7 @@ def update_member_role(
         )
 
     # Verifica se a role existe e pertence a organizacao
-    role = session.get(Role, payload.role_id)
+    role = db.get(Role, payload.role_id)
     if not role or role.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -139,9 +137,9 @@ def update_member_role(
 
     # Atualiza a role
     member.role_id = payload.role_id
-    session.add(member)
-    session.commit()
-    session.refresh(member, ["user", "role"])
+    db.add(member)
+    db.commit()
+    db.refresh(member, ["user", "role"])
 
     return MemberDetailResponse(
         id=member.id,

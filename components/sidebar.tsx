@@ -12,7 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import {
   Collapsible,
   CollapsibleContent,
@@ -66,7 +66,7 @@ function SidebarContent({
 }: SidebarProps & { onItemClick?: () => void; showMenuToggle?: boolean; isMobile?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { hasPermission } = useAuth();
+  const { hasPermission } = useSession();
   const [menuExpanded, setMenuExpanded] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -344,7 +344,7 @@ function MobileMenuContent({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { hasPermission } = useAuth();
+  const { hasPermission } = useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const canViewMembers = hasPermission("MEMBERS_READ");

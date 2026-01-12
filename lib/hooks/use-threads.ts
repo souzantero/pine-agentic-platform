@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import { getDefaultAgentId, getDefaultConfig } from "@/lib/agents";
 import type { Thread, ThreadWithMessages, Message, ApiThread } from "@/lib/types";
@@ -36,7 +36,7 @@ function mapApiThreadToThread(t: ApiThread): ThreadWithMessages {
 }
 
 export function useThreads(): UseThreadsReturn {
-  const { currentMembership } = useAuth();
+  const { currentMembership } = useSession();
   const orgId = currentMembership?.organizationId;
 
   const [threads, setThreads] = useState<ThreadWithMessages[]>([]);
@@ -196,7 +196,7 @@ interface UseSidebarThreadsReturn {
 }
 
 export function useSidebarThreads(): UseSidebarThreadsReturn {
-  const { currentMembership } = useAuth();
+  const { currentMembership } = useSession();
   const orgId = currentMembership?.organizationId;
 
   const [threads, setThreads] = useState<Thread[]>([]);

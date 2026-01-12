@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import type { Invite, ApiPublicInvite, CreateInviteResult, MutationResult } from "@/lib/types";
 
@@ -14,7 +14,7 @@ interface UseInvitesReturn {
 }
 
 export function useInvites(): UseInvitesReturn {
-  const { currentMembership, hasPermission } = useAuth();
+  const { currentMembership, hasPermission } = useSession();
   const orgId = currentMembership?.organizationId;
   const canInvite = hasPermission("MEMBERS_INVITE");
 
@@ -102,7 +102,7 @@ interface UsePublicInviteReturn {
 }
 
 export function usePublicInvite(token: string): UsePublicInviteReturn {
-  const { refreshSession } = useAuth();
+  const { refreshSession } = useSession();
 
   const [invite, setInvite] = useState<ApiPublicInvite | null>(null);
   const [isLoading, setIsLoading] = useState(true);

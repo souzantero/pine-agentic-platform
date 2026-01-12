@@ -236,6 +236,15 @@ export interface UpdateOrganizationData {
   slug: string;
 }
 
+export interface CreateOrganizationData {
+  name: string;
+  slug: string;
+}
+
+export interface CreateOrganizationResult extends MutationResult {
+  organization?: Organization;
+}
+
 // Model Providers
 export type ModelProviderType = "OPENAI" | "OPENROUTER" | "ANTHROPIC" | "GOOGLE";
 

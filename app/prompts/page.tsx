@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { usePrompts, useSidebarThreads } from "@/lib/hooks";
 import { api } from "@/lib/api";
 import { Header } from "@/components/header";
@@ -21,7 +21,7 @@ import type { ApiThread } from "@/lib/types";
 
 export default function PromptsPage() {
   const router = useRouter();
-  const { isLoggedIn, isLoading: authLoading, hasOrganization, hasPermission, currentMembership } = useAuth();
+  const { isLoggedIn, isLoading: authLoading, hasOrganization, hasPermission, currentMembership } = useSession();
   const orgId = currentMembership?.organizationId;
 
   // Hooks

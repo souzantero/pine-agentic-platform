@@ -71,7 +71,7 @@ export interface Membership {
   role: Role;
 }
 
-interface AuthContextType {
+interface SessionContextType {
   user: User | null;
   memberships: Membership[];
   currentMembership: Membership | null;
@@ -85,18 +85,14 @@ interface AuthContextType {
     name?: string
   ) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
-  createOrganization: (
-    name: string,
-    slug: string
-  ) => Promise<{ error?: string; organization?: Organization }>;
   switchOrganization: (organizationId: string) => Promise<{ error?: string }>;
   refreshSession: () => Promise<void>;
   hasPermission: (permission: Permission) => boolean;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const SessionContext = createContext<SessionContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
@@ -235,40 +231,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCurrentOrgId(null);
   }, []);
 
-  const createOrganization = useCallback(
-    async (
-      name: string,
-      slug: string
-    ): Promise<{ error?: string; organization?: Organization }> => {
-      try {
-        // Backend retorna a org diretamente, não em { organization: ... }
-        const response = await api.post<Organization>(
-          "/organizations",
-          { name, slug }
-        );
-
-        if (response.error) {
-          return { error: response.error };
-        }
-
-        const newOrg = response.data;
-        if (newOrg) {
-          // Definir a nova org como atual
-          saveCurrentOrgId(newOrg.id);
-          setCurrentOrgId(newOrg.id);
-        }
-
-        // Recarregar sessão para atualizar memberships (sem resetar loading)
-        await loadSession(true);
-        return { organization: newOrg };
-      } catch (error) {
-        console.error("Create organization error:", error);
-        return { error: "Erro ao criar organização" };
-      }
-    },
-    [loadSession]
-  );
-
   const refreshSession = useCallback(async () => {
     await loadSession(true); // Não mostrar loading ao atualizar
   }, [loadSession]);
@@ -311,7 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <AuthContext.Provider
+    <SessionContext.Provider
       value={{
         user,
         memberships,
@@ -322,21 +284,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn,
         signUp,
         signOut,
-        createOrganization,
         switchOrganization,
         refreshSession,
         hasPermission,
       }}
     >
       {children}
-    </AuthContext.Provider>
+    </SessionContext.Provider>
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
+export function useSession() {
+  const context = useContext(SessionContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useSession must be used within a SessionProvider");
   }
   return context;
 }

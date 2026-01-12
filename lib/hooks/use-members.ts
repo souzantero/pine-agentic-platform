@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import type { Member, MutationResult } from "@/lib/types";
 
@@ -15,7 +15,7 @@ interface UseMembersReturn {
 }
 
 export function useMembers(): UseMembersReturn {
-  const { currentMembership } = useAuth();
+  const { currentMembership } = useSession();
   const orgId = currentMembership?.organizationId;
 
   const [members, setMembers] = useState<Member[]>([]);

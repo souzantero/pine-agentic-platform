@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import type {
   ModelProviderConfig,
@@ -22,7 +22,7 @@ interface UseModelProvidersReturn {
 }
 
 export function useModelProviders(): UseModelProvidersReturn {
-  const { currentMembership } = useAuth();
+  const { currentMembership } = useSession();
   const orgId = currentMembership?.organizationId;
 
   const [providers, setProviders] = useState<ModelProviderConfig[]>([]);

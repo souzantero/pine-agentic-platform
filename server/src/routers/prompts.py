@@ -1,17 +1,15 @@
 import uuid
 from typing import Annotated, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlmodel import Session, col, select
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlmodel import col, select
 
 from src.auth import CurrentUser, check_permission, get_user_membership
-from src.database import get_session
+from src.database import DatabaseSession
 from src.entities import Permission, Prompt, PromptRole
 from src.schemas import CreatePromptRequest, PromptResponse, UpdatePromptRequest
 
 router = APIRouter(prefix="/organizations/{organization_id}/prompts", tags=["prompts"])
-
-SessionDep = Annotated[Session, Depends(get_session)]
 
 
 def validate_prompt_role(role_str: str) -> PromptRole:
@@ -29,13 +27,13 @@ def validate_prompt_role(role_str: str) -> PromptRole:
 def list_prompts(
     organization_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 50,
 ):
     """Lista prompts da organizacao (requer PROMPTS_READ)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.PROMPTS_READ):
+    if not check_permission(db, current_user.id, organization_id, Permission.PROMPTS_READ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao PROMPTS_READ necessaria",
@@ -49,7 +47,7 @@ def list_prompts(
         .offset(offset)
         .limit(limit)
     )
-    prompts = session.exec(statement).all()
+    prompts = db.exec(statement).all()
 
     return [
         PromptResponse(
@@ -70,11 +68,11 @@ def create_prompt(
     organization_id: uuid.UUID,
     payload: CreatePromptRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Cria um novo prompt (requer PROMPTS_WRITE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.PROMPTS_WRITE):
+    if not check_permission(db, current_user.id, organization_id, Permission.PROMPTS_WRITE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao PROMPTS_WRITE necessaria",
@@ -84,7 +82,7 @@ def create_prompt(
     prompt_role = validate_prompt_role(payload.role)
 
     # Busca o membership do usuario
-    membership = get_user_membership(session, current_user.id, organization_id)
+    membership = get_user_membership(db, current_user.id, organization_id)
     if not membership:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -99,9 +97,9 @@ def create_prompt(
         content=payload.content,
         role=prompt_role,
     )
-    session.add(prompt)
-    session.commit()
-    session.refresh(prompt)
+    db.add(prompt)
+    db.commit()
+    db.refresh(prompt)
 
     return PromptResponse(
         id=prompt.id,
@@ -119,18 +117,18 @@ def get_prompt(
     organization_id: uuid.UUID,
     prompt_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Retorna detalhes de um prompt (requer PROMPTS_READ)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.PROMPTS_READ):
+    if not check_permission(db, current_user.id, organization_id, Permission.PROMPTS_READ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao PROMPTS_READ necessaria",
         )
 
     # Busca o prompt
-    prompt = session.get(Prompt, prompt_id)
+    prompt = db.get(Prompt, prompt_id)
     if not prompt or prompt.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -154,18 +152,18 @@ def update_prompt(
     prompt_id: uuid.UUID,
     payload: UpdatePromptRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Atualiza um prompt (requer PROMPTS_WRITE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.PROMPTS_WRITE):
+    if not check_permission(db, current_user.id, organization_id, Permission.PROMPTS_WRITE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao PROMPTS_WRITE necessaria",
         )
 
     # Busca o prompt
-    prompt = session.get(Prompt, prompt_id)
+    prompt = db.get(Prompt, prompt_id)
     if not prompt or prompt.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -182,9 +180,9 @@ def update_prompt(
     if payload.role is not None:
         prompt.role = validate_prompt_role(payload.role)
 
-    session.add(prompt)
-    session.commit()
-    session.refresh(prompt)
+    db.add(prompt)
+    db.commit()
+    db.refresh(prompt)
 
     return PromptResponse(
         id=prompt.id,
@@ -202,23 +200,23 @@ def delete_prompt(
     organization_id: uuid.UUID,
     prompt_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Deleta um prompt (requer PROMPTS_DELETE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.PROMPTS_DELETE):
+    if not check_permission(db, current_user.id, organization_id, Permission.PROMPTS_DELETE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao PROMPTS_DELETE necessaria",
         )
 
     # Busca o prompt
-    prompt = session.get(Prompt, prompt_id)
+    prompt = db.get(Prompt, prompt_id)
     if not prompt or prompt.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Prompt nao encontrado",
         )
 
-    session.delete(prompt)
-    session.commit()
+    db.delete(prompt)
+    db.commit()

@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { OrgSwitcher } from "@/components/org-switcher";
 import { LogOut, Menu, Settings } from "lucide-react";
 
@@ -32,7 +32,7 @@ interface HeaderProps {
 
 export function Header({ onMenuClick, onSettingsClick, showSettingsButton }: HeaderProps) {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useSession();
   const [loggingOut, setLoggingOut] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 

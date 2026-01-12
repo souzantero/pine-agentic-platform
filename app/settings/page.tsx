@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { useOrganization, useModelProviders } from "@/lib/hooks";
 import { MODEL_PROVIDERS } from "@/lib/types";
 import type { ModelProviderType } from "@/lib/types";
@@ -22,7 +22,7 @@ import { Settings, ArrowLeft, Check, Eye, EyeOff, Trash2, Plus } from "lucide-re
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { isLoggedIn, isLoading: authLoading, hasOrganization, hasPermission } = useAuth();
+  const { isLoggedIn, isLoading: authLoading, hasOrganization, hasPermission } = useSession();
 
   // Hooks
   const {

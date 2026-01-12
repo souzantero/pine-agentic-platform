@@ -1,23 +1,21 @@
 import uuid
-from typing import Annotated, List
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import Session, select
 
 from src.auth import CurrentUser, check_permission
-from src.database import get_session
+from src.database import DatabaseSession
 from src.entities import Permission, Role, RolePermission, RoleScope
 from src.schemas import CreateRoleRequest, RoleDetailResponse, UpdateRoleRequest
 
 router = APIRouter(prefix="/organizations/{organization_id}/roles", tags=["roles"])
 
-SessionDep = Annotated[Session, Depends(get_session)]
 
-
-def get_role_permissions(session: Session, role_id: uuid.UUID) -> List[str]:
+def get_role_permissions(db: Session, role_id: uuid.UUID) -> List[str]:
     """Retorna lista de permissoes de uma role."""
     statement = select(RolePermission).where(RolePermission.role_id == role_id)
-    role_permissions = session.exec(statement).all()
+    role_permissions = db.exec(statement).all()
     return [rp.permission.value for rp in role_permissions]
 
 
@@ -39,11 +37,11 @@ def validate_permissions(permissions: List[str]) -> List[Permission]:
 def list_roles(
     organization_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Lista todas as roles da organizacao (requer ROLES_READ)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.ROLES_READ):
+    if not check_permission(db, current_user.id, organization_id, Permission.ROLES_READ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao ROLES_READ necessaria",
@@ -51,12 +49,12 @@ def list_roles(
 
     # Busca roles da organizacao
     statement = select(Role).where(Role.organization_id == organization_id)
-    roles = session.exec(statement).all()
+    roles = db.exec(statement).all()
 
     # Monta response com permissoes
     result = []
     for role in roles:
-        permissions = get_role_permissions(session, role.id)
+        permissions = get_role_permissions(db, role.id)
         result.append(
             RoleDetailResponse(
                 id=role.id,
@@ -76,11 +74,11 @@ def create_role(
     organization_id: uuid.UUID,
     payload: CreateRoleRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Cria uma nova role na organizacao (requer ROLES_MANAGE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.ROLES_MANAGE):
+    if not check_permission(db, current_user.id, organization_id, Permission.ROLES_MANAGE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao ROLES_MANAGE necessaria",
@@ -94,7 +92,7 @@ def create_role(
         Role.organization_id == organization_id,
         Role.name == payload.name,
     )
-    existing = session.exec(statement).first()
+    existing = db.exec(statement).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -109,8 +107,8 @@ def create_role(
         description=payload.description,
         is_system_role=False,
     )
-    session.add(role)
-    session.flush()
+    db.add(role)
+    db.flush()
 
     # Adiciona permissoes
     for permission in valid_permissions:
@@ -118,10 +116,10 @@ def create_role(
             role_id=role.id,
             permission=permission,
         )
-        session.add(role_permission)
+        db.add(role_permission)
 
-    session.commit()
-    session.refresh(role)
+    db.commit()
+    db.refresh(role)
 
     return RoleDetailResponse(
         id=role.id,
@@ -139,18 +137,18 @@ def update_role(
     role_id: uuid.UUID,
     payload: UpdateRoleRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Atualiza uma role (requer ROLES_MANAGE). Nao permite editar system roles."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.ROLES_MANAGE):
+    if not check_permission(db, current_user.id, organization_id, Permission.ROLES_MANAGE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao ROLES_MANAGE necessaria",
         )
 
     # Busca a role
-    role = session.get(Role, role_id)
+    role = db.get(Role, role_id)
     if not role or role.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -172,7 +170,7 @@ def update_role(
             Role.name == payload.name,
             Role.id != role_id,
         )
-        existing = session.exec(statement).first()
+        existing = db.exec(statement).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -189,9 +187,9 @@ def update_role(
 
         # Remove permissoes antigas
         statement = select(RolePermission).where(RolePermission.role_id == role_id)
-        old_permissions = session.exec(statement).all()
+        old_permissions = db.exec(statement).all()
         for old_perm in old_permissions:
-            session.delete(old_perm)
+            db.delete(old_perm)
 
         # Adiciona novas permissoes
         for permission in valid_permissions:
@@ -199,13 +197,13 @@ def update_role(
                 role_id=role.id,
                 permission=permission,
             )
-            session.add(role_permission)
+            db.add(role_permission)
 
-    session.add(role)
-    session.commit()
-    session.refresh(role)
+    db.add(role)
+    db.commit()
+    db.refresh(role)
 
-    permissions = get_role_permissions(session, role.id)
+    permissions = get_role_permissions(db, role.id)
 
     return RoleDetailResponse(
         id=role.id,
@@ -222,18 +220,18 @@ def delete_role(
     organization_id: uuid.UUID,
     role_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Deleta uma role (requer ROLES_MANAGE). Nao permite deletar system roles."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.ROLES_MANAGE):
+    if not check_permission(db, current_user.id, organization_id, Permission.ROLES_MANAGE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao ROLES_MANAGE necessaria",
         )
 
     # Busca a role
-    role = session.get(Role, role_id)
+    role = db.get(Role, role_id)
     if not role or role.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -250,7 +248,7 @@ def delete_role(
     # Verifica se ha membros usando esta role
     from src.entities import OrganizationMember
     statement = select(OrganizationMember).where(OrganizationMember.role_id == role_id)
-    members_using = session.exec(statement).first()
+    members_using = db.exec(statement).first()
     if members_using:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -259,10 +257,10 @@ def delete_role(
 
     # Remove permissoes primeiro (cascade manual)
     statement = select(RolePermission).where(RolePermission.role_id == role_id)
-    role_permissions = session.exec(statement).all()
+    role_permissions = db.exec(statement).all()
     for rp in role_permissions:
-        session.delete(rp)
+        db.delete(rp)
 
     # Remove a role
-    session.delete(role)
-    session.commit()
+    db.delete(role)
+    db.commit()

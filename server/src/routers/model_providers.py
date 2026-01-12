@@ -1,11 +1,11 @@
 import uuid
-from typing import Annotated, List
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, HTTPException, status
+from sqlmodel import select
 
 from src.auth import CurrentUser, check_permission
-from src.database import get_session
+from src.database import DatabaseSession
 from src.entities import ModelProvider, Organization, OrganizationModelProvider, Permission
 from src.schemas import (
     CreateModelProviderRequest,
@@ -15,8 +15,6 @@ from src.schemas import (
 )
 
 router = APIRouter(prefix="/organizations/{organization_id}/model-providers", tags=["model-providers"])
-
-SessionDep = Annotated[Session, Depends(get_session)]
 
 
 def validate_provider(provider_str: str) -> ModelProvider:
@@ -34,18 +32,18 @@ def validate_provider(provider_str: str) -> ModelProvider:
 def list_model_providers(
     organization_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Lista provedores de modelos da organizacao (requer ORGANIZATION_MANAGE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
+    if not check_permission(db, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao ORGANIZATION_MANAGE necessaria",
         )
 
     # Busca organizacao
-    organization = session.get(Organization, organization_id)
+    organization = db.get(Organization, organization_id)
     if not organization:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -58,7 +56,7 @@ def list_model_providers(
         .where(OrganizationModelProvider.organization_id == organization_id)
         .order_by(OrganizationModelProvider.provider)
     )
-    providers = session.exec(statement).all()
+    providers = db.exec(statement).all()
 
     return ModelProvidersListResponse(
         default_provider=organization.default_model_provider.value if organization.default_model_provider else None,
@@ -80,11 +78,11 @@ def create_or_update_model_provider(
     organization_id: uuid.UUID,
     payload: CreateModelProviderRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Adiciona ou atualiza um provedor de modelos (requer ORGANIZATION_MANAGE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
+    if not check_permission(db, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao ORGANIZATION_MANAGE necessaria",
@@ -105,15 +103,15 @@ def create_or_update_model_provider(
         OrganizationModelProvider.organization_id == organization_id,
         OrganizationModelProvider.provider == provider_enum,
     )
-    existing = session.exec(statement).first()
+    existing = db.exec(statement).first()
 
     if existing:
         # Atualiza
         existing.api_key = payload.api_key.strip()
         existing.is_active = True
-        session.add(existing)
-        session.commit()
-        session.refresh(existing)
+        db.add(existing)
+        db.commit()
+        db.refresh(existing)
         provider = existing
     else:
         # Cria novo
@@ -123,9 +121,9 @@ def create_or_update_model_provider(
             api_key=payload.api_key.strip(),
             is_active=True,
         )
-        session.add(provider)
-        session.commit()
-        session.refresh(provider)
+        db.add(provider)
+        db.commit()
+        db.refresh(provider)
 
     return ModelProviderResponse(
         id=provider.id,
@@ -141,18 +139,18 @@ def set_default_provider(
     organization_id: uuid.UUID,
     payload: SetDefaultProviderRequest,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Define o provedor padrao da organizacao (requer ORGANIZATION_MANAGE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
+    if not check_permission(db, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao ORGANIZATION_MANAGE necessaria",
         )
 
     # Busca organizacao
-    organization = session.get(Organization, organization_id)
+    organization = db.get(Organization, organization_id)
     if not organization:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -168,7 +166,7 @@ def set_default_provider(
             OrganizationModelProvider.organization_id == organization_id,
             OrganizationModelProvider.provider == provider_enum,
         )
-        existing = session.exec(statement).first()
+        existing = db.exec(statement).first()
 
         if not existing:
             raise HTTPException(
@@ -180,8 +178,8 @@ def set_default_provider(
     else:
         organization.default_model_provider = None
 
-    session.add(organization)
-    session.commit()
+    db.add(organization)
+    db.commit()
 
     return {"default_provider": payload.default_provider}
 
@@ -191,18 +189,18 @@ def delete_model_provider(
     organization_id: uuid.UUID,
     provider_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
 ):
     """Remove um provedor de modelos (requer ORGANIZATION_MANAGE)."""
     # Verifica permissao
-    if not check_permission(session, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
+    if not check_permission(db, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permissao ORGANIZATION_MANAGE necessaria",
         )
 
     # Busca o provedor
-    provider = session.get(OrganizationModelProvider, provider_id)
+    provider = db.get(OrganizationModelProvider, provider_id)
     if not provider or provider.organization_id != organization_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -210,11 +208,11 @@ def delete_model_provider(
         )
 
     # Se este provedor for o padrao, remove como padrao
-    organization = session.get(Organization, organization_id)
+    organization = db.get(Organization, organization_id)
     if organization and organization.default_model_provider == provider.provider:
         organization.default_model_provider = None
-        session.add(organization)
+        db.add(organization)
 
     # Deleta o provedor
-    session.delete(provider)
-    session.commit()
+    db.delete(provider)
+    db.commit()

@@ -1,17 +1,14 @@
 import uuid
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlmodel import Session, select
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlmodel import select
 
 from src.auth import CurrentUser, get_user_membership
-from src.database import get_session
+from src.database import DatabaseSession
 from src.entities import ModelProvider, Organization, OrganizationModelProvider
 from src.schemas import ModelInfo, ModelsResponse
 
 router = APIRouter(prefix="/organizations/{organization_id}/models", tags=["models"])
-
-SessionDep = Annotated[Session, Depends(get_session)]
 
 # Definicao dos modelos disponiveis por provedor
 MODELS_BY_PROVIDER: dict[ModelProvider, list[ModelInfo]] = {
@@ -48,12 +45,12 @@ MODELS_BY_PROVIDER: dict[ModelProvider, list[ModelInfo]] = {
 def get_available_models(
     organization_id: uuid.UUID,
     current_user: CurrentUser,
-    session: SessionDep,
+    db: DatabaseSession,
     provider: str | None = Query(default=None, description="Provedor especifico para buscar modelos"),
 ):
     """Retorna modelos disponiveis baseado no provedor da organizacao."""
     # Verifica se usuario e membro
-    membership = get_user_membership(session, current_user.id, organization_id)
+    membership = get_user_membership(db, current_user.id, organization_id)
     if not membership:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -61,7 +58,7 @@ def get_available_models(
         )
 
     # Busca organizacao com provedores
-    organization = session.get(Organization, organization_id)
+    organization = db.get(Organization, organization_id)
     if not organization:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -77,7 +74,7 @@ def get_available_models(
         )
         .order_by(OrganizationModelProvider.provider)
     )
-    active_providers = session.exec(statement).all()
+    active_providers = db.exec(statement).all()
     configured_providers = [p.provider for p in active_providers]
 
     # Determina qual provedor usar

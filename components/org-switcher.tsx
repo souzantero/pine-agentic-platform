@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import {
 import { Building2, Check, ChevronsUpDown } from "lucide-react";
 
 export function OrgSwitcher() {
-  const { memberships, currentMembership, switchOrganization } = useAuth();
+  const { memberships, currentMembership, switchOrganization } = useSession();
   const [switching, setSwitching] = useState(false);
 
   const handleSwitch = async (organizationId: string) => {

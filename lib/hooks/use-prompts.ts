@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import type {
   Prompt,
@@ -49,7 +49,7 @@ function mapApiPromptToSystemPrompt(p: ApiPrompt): SystemPrompt {
 }
 
 export function usePrompts(): UsePromptsReturn {
-  const { currentMembership } = useAuth();
+  const { currentMembership } = useSession();
   const orgId = currentMembership?.organizationId;
 
   const [prompts, setPrompts] = useState<Prompt[]>([]);

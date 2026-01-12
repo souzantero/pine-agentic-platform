@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
+import { useOrganization } from "@/lib/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +23,8 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { isLoggedIn, isLoading, hasOrganization, createOrganization } =
-    useAuth();
+  const { isLoggedIn, isLoading, hasOrganization } = useSession();
+  const { createOrganization } = useOrganization();
 
   // Redirecionar baseado no estado de autenticação
   useEffect(() => {
@@ -73,7 +74,10 @@ export default function OnboardingPage() {
       return;
     }
 
-    const result = await createOrganization(name.trim(), slug.trim());
+    const result = await createOrganization({
+      name: name.trim(),
+      slug: slug.trim(),
+    });
 
     if (result.error) {
       setError(result.error);

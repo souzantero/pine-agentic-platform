@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useSession } from "@/lib/session";
 import { useMembers, useInvites, useRoles } from "@/lib/hooks";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { Users, Link as LinkIcon, ArrowLeft } from "lucide-react";
 
 export default function MembersPage() {
   const router = useRouter();
-  const { user, isLoggedIn, isLoading: authLoading, hasOrganization, hasPermission } = useAuth();
+  const { user, isLoggedIn, isLoading: authLoading, hasOrganization, hasPermission } = useSession();
 
   // Hooks
   const {
