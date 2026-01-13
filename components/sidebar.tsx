@@ -13,6 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useSession } from "@/lib/session";
+import type { Thread } from "@/lib/types";
 import {
   Collapsible,
   CollapsibleContent,
@@ -23,12 +24,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
-export interface Thread {
-  id: string;
-  title: string;
-  updatedAt: Date;
-}
 
 type NavSection = "threads" | "prompts" | "settings";
 

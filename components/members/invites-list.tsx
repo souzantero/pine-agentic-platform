@@ -4,23 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Copy, Check, Clock, Shield } from "lucide-react";
-
-export interface Invite {
-  id: string;
-  token: string;
-  inviteLink: string;
-  expiresAt: string;
-  createdAt: string;
-  role: {
-    id: string;
-    name: string;
-  };
-  createdBy: {
-    id: string;
-    name: string;
-    email: string;
-  };
-}
+import type { Invite } from "@/lib/types";
 
 interface InvitesListProps {
   invites: Invite[];

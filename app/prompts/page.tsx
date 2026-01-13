@@ -14,10 +14,9 @@ import {
   CreatePromptDialog,
   EditPromptDialog,
   DeletePromptDialog,
-  type Prompt,
 } from "@/components/prompts";
 import { FileText, Plus } from "lucide-react";
-import type { ApiThread } from "@/lib/types";
+import type { ApiThread, Prompt } from "@/lib/types";
 
 export default function PromptsPage() {
   const router = useRouter();

@@ -1,5 +1,7 @@
-export { MemberList, type Member } from "./member-list";
+export { MemberList } from "./member-list";
 export { CreateInviteDialog } from "./create-invite-dialog";
 export { ChangeRoleDialog } from "./change-role-dialog";
 export { RemoveMemberDialog } from "./remove-member-dialog";
-export { InvitesList, type Invite } from "./invites-list";
+export { InvitesList } from "./invites-list";
+
+// Tipos Member e Invite disponíveis em @/lib/types

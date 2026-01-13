@@ -13,9 +13,9 @@ import {
   ChangeRoleDialog,
   RemoveMemberDialog,
   InvitesList,
-  type Member,
 } from "@/components/members";
 import { Users, Link as LinkIcon, ArrowLeft } from "lucide-react";
+import type { Member } from "@/lib/types";
 
 export default function MembersPage() {
   const router = useRouter();

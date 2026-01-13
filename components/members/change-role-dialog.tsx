@@ -19,14 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Shield } from "lucide-react";
-import type { Member } from "./member-list";
-
-interface Role {
-  id: string;
-  name: string;
-  description: string | null;
-  isSystemRole: boolean;
-}
+import type { Member, Role } from "@/lib/types";
 
 interface ChangeRoleDialogProps {
   open: boolean;

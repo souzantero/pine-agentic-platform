@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { Member } from "./member-list";
+import type { Member } from "@/lib/types";
 
 interface RemoveMemberDialogProps {
   open: boolean;

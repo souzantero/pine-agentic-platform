@@ -9,22 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MoreHorizontal, Pencil, Trash2, Bot, User, Settings2 } from "lucide-react";
-
-export interface Prompt {
-  id: string;
-  name: string;
-  content: string;
-  role: "SYSTEM" | "USER" | "ASSISTANT";
-  createdAt: string;
-  updatedAt: string;
-  createdBy: {
-    id: string;
-    user: {
-      id: string;
-      name: string;
-    };
-  };
-}
+import type { Prompt } from "@/lib/types";
 
 interface PromptListProps {
   prompts: Prompt[];

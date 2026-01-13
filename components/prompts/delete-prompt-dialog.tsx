@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import type { Prompt } from "./prompt-list";
+import type { Prompt } from "@/lib/types";
 
 interface DeletePromptDialogProps {
   open: boolean;

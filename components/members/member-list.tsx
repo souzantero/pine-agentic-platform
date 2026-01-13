@@ -10,22 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MoreHorizontal, Shield, Crown, UserMinus } from "lucide-react";
-
-export interface Member {
-  id: string;
-  isOwner: boolean;
-  createdAt: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
-  role: {
-    id: string;
-    name: string;
-    description: string | null;
-  };
-}
+import type { Member } from "@/lib/types";
 
 interface MemberListProps {
   members: Member[];
