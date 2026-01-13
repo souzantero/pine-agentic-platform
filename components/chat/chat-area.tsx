@@ -110,7 +110,7 @@ export function ChatArea({ messages, onSendMessage, isLoading, disabled, selecte
               rows={1}
               disabled={isLoading || disabled}
             />
-            <Button type="submit" size="icon" disabled={!input.trim() || isLoading || disabled}>
+            <Button type="submit" size="icon" className="min-h-[44px] min-w-[44px] h-auto" disabled={!input.trim() || isLoading || disabled}>
               <Send className="h-4 w-4" />
             </Button>
           </div>
