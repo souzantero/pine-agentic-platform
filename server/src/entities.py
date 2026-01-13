@@ -198,6 +198,8 @@ class Thread(SQLModel, table=True):
     organization_id: uuid.UUID = Field(foreign_key="organizations.id", index=True)
     created_by_id: uuid.UUID = Field(foreign_key="organization_members.id", index=True)
     title: str | None = None
+    last_message_at: datetime | None = Field(default=None, index=True)
+    last_message_preview: str | None = None
     created_at: datetime = Field(default_factory=get_now)
     updated_at: datetime = Field(default_factory=get_now, sa_column_kwargs={"onupdate": get_now})
 

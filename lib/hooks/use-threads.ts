@@ -46,10 +46,12 @@ function mapAgentMessageToMessage(m: AgentMessage): Message {
 // Converter resposta da API para tipo do frontend
 function mapApiThreadToThread(t: ApiThread): ThreadWithMessages {
   const defaultAgentId = getDefaultAgentId();
+  // Usa lastMessagePreview como titulo se title estiver vazio
+  const displayTitle = t.title || t.lastMessagePreview || "Nova conversa";
   return {
     id: t.id,
-    title: t.title || "Nova conversa",
-    updatedAt: new Date(t.updatedAt),
+    title: displayTitle,
+    updatedAt: t.lastMessageAt ? new Date(t.lastMessageAt) : new Date(t.updatedAt),
     messages: [],
     agentId: defaultAgentId,
     agentConfig: getStoredOrDefaultConfig(t.id, defaultAgentId),
@@ -159,22 +161,33 @@ export function useThreads(): UseThreadsReturn {
   );
 
   const addMessage = useCallback((threadId: string, message: Message) => {
-    setThreads((prev) =>
-      prev.map((thread) => {
+    setThreads((prev) => {
+      // Atualiza a thread com a nova mensagem
+      const updated = prev.map((thread) => {
         if (thread.id === threadId) {
-          const isFirstMessage = thread.messages.length === 0;
+          // Atualiza titulo com preview da msg do usuario
+          const newTitle = message.role === "user"
+            ? message.content.slice(0, 100) + (message.content.length > 100 ? "..." : "")
+            : thread.title;
           return {
             ...thread,
-            title: isFirstMessage && message.role === "user"
-              ? message.content.slice(0, 30) + (message.content.length > 30 ? "..." : "")
-              : thread.title,
+            title: newTitle,
             updatedAt: new Date(),
             messages: [...thread.messages, message],
           };
         }
         return thread;
-      })
-    );
+      });
+
+      // Move a thread atualizada para o topo da lista
+      const threadIndex = updated.findIndex((t) => t.id === threadId);
+      if (threadIndex > 0) {
+        const [thread] = updated.splice(threadIndex, 1);
+        updated.unshift(thread);
+      }
+
+      return updated;
+    });
   }, []);
 
   const updateThreadTitle = useCallback((threadId: string, title: string) => {

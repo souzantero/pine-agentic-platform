@@ -269,6 +269,8 @@ class UpdateThreadRequest(CamelCaseModel):
 class ThreadResponse(CamelCaseModel):
     id: uuid.UUID
     title: str | None
+    last_message_at: datetime | None
+    last_message_preview: str | None
     created_by_id: uuid.UUID
     created_at: datetime
     updated_at: datetime

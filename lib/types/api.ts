@@ -10,6 +10,8 @@ import type { ModelOption } from "./entities";
 export interface ApiThread {
   id: string;
   title: string | null;
+  lastMessageAt: string | null;
+  lastMessagePreview: string | null;
   createdAt: string;
   updatedAt: string;
   createdBy?: {

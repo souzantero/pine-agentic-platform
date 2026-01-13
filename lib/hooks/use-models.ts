@@ -7,6 +7,7 @@ import type { ModelOption, ApiModelsResponse } from "@/lib/types";
 
 interface UseModelsReturn {
   models: ModelOption[];
+  modelsProvider: string | null;
   configuredProviders: string[];
   isLoading: boolean;
   error: string | null;
@@ -19,6 +20,7 @@ export function useModels(): UseModelsReturn {
   const orgId = currentMembership?.organizationId;
 
   const [models, setModels] = useState<ModelOption[]>([]);
+  const [modelsProvider, setModelsProvider] = useState<string | null>(null);
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,7 @@ export function useModels(): UseModelsReturn {
 
         if (response.data) {
           setModels(response.data.models || []);
+          setModelsProvider(provider || null);
           setConfiguredProviders(response.data.configuredProviders || []);
         }
       } catch (err) {
@@ -76,6 +79,7 @@ export function useModels(): UseModelsReturn {
 
   return {
     models,
+    modelsProvider,
     configuredProviders,
     isLoading,
     error,

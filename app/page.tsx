@@ -33,6 +33,7 @@ export default function Home() {
 
   const {
     models: availableModels,
+    modelsProvider,
     configuredProviders,
     loadModelsForProvider,
   } = useModels();
@@ -76,10 +77,11 @@ export default function Home() {
     if (!selectedThread || availableModels.length === 0) return;
 
     const agentConfig = selectedThread.agentConfig as BasicAgentConfig;
-    if (!agentConfig.model && availableModels.length > 0) {
+    // So auto-seleciona se os modelos sao do mesmo provider da thread
+    if (!agentConfig.model && modelsProvider === agentConfig.provider) {
       updateAgentConfigMultiple(selectedThread.id, { model: availableModels[0].id });
     }
-  }, [selectedThread?.id, availableModels, updateAgentConfigMultiple]);
+  }, [selectedThread?.id, availableModels, modelsProvider, updateAgentConfigMultiple]);
 
   const handleNewChat = useCallback(async () => {
     await createThread();

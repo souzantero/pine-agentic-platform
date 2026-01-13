@@ -1,5 +1,6 @@
 import json
 import uuid
+from datetime import UTC, datetime
 from typing import Annotated, Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -89,11 +90,14 @@ def list_threads(
             detail="Permissao THREADS_READ necessaria",
         )
 
-    # Busca threads
+    # Busca threads ordenadas por ultima mensagem (nulls last) ou data de criacao
     statement = (
         select(Thread)
         .where(Thread.organization_id == organization_id)
-        .order_by(col(Thread.created_at).desc())
+        .order_by(
+            col(Thread.last_message_at).desc().nulls_last(),
+            col(Thread.created_at).desc(),
+        )
         .offset(offset)
         .limit(limit)
     )
@@ -103,6 +107,8 @@ def list_threads(
         ThreadResponse(
             id=t.id,
             title=t.title,
+            last_message_at=t.last_message_at,
+            last_message_preview=t.last_message_preview,
             created_by_id=t.created_by_id,
             created_at=t.created_at,
             updated_at=t.updated_at,
@@ -147,6 +153,8 @@ def create_thread(
     return ThreadResponse(
         id=thread.id,
         title=thread.title,
+        last_message_at=thread.last_message_at,
+        last_message_preview=thread.last_message_preview,
         created_by_id=thread.created_by_id,
         created_at=thread.created_at,
         updated_at=thread.updated_at,
@@ -179,6 +187,8 @@ def get_thread(
     return ThreadResponse(
         id=thread.id,
         title=thread.title,
+        last_message_at=thread.last_message_at,
+        last_message_preview=thread.last_message_preview,
         created_by_id=thread.created_by_id,
         created_at=thread.created_at,
         updated_at=thread.updated_at,
@@ -220,6 +230,8 @@ def update_thread(
     return ThreadResponse(
         id=thread.id,
         title=thread.title,
+        last_message_at=thread.last_message_at,
+        last_message_preview=thread.last_message_preview,
         created_by_id=thread.created_by_id,
         created_at=thread.created_at,
         updated_at=thread.updated_at,
@@ -315,6 +327,17 @@ async def invoke_run(
         {"messages": messages}, config=get_config(thread_id)
     )
     state_messages = state_values.get("messages", [])
+
+    # Atualiza thread com info da ultima mensagem
+    thread = db.get(Thread, uuid.UUID(thread_id))
+    if thread:
+        user_message = payload.input.messages[0].content if payload.input.messages else ""
+        preview = user_message[:100] + ("..." if len(user_message) > 100 else "")
+        thread.last_message_at = datetime.now(UTC)
+        thread.last_message_preview = preview
+        db.add(thread)
+        db.commit()
+
     return {"messages": agent_messages_to_list(state_messages)}
 
 
