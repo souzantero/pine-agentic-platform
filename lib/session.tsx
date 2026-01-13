@@ -17,59 +17,7 @@ import {
   setCurrentOrgId as saveCurrentOrgId,
   clearCurrentOrgId,
 } from "./storage";
-
-// Tipos
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  createdAt: string;
-}
-
-export type Permission =
-  | "THREADS_READ"
-  | "THREADS_WRITE"
-  | "THREADS_DELETE"
-  | "AGENTS_READ"
-  | "AGENTS_WRITE"
-  | "AGENTS_DELETE"
-  | "MEMBERS_READ"
-  | "MEMBERS_INVITE"
-  | "MEMBERS_MANAGE"
-  | "ROLES_READ"
-  | "ROLES_MANAGE"
-  | "ORGANIZATION_MANAGE"
-  | "PLATFORM_MANAGE"
-  | "PROMPTS_READ"
-  | "PROMPTS_WRITE"
-  | "PROMPTS_DELETE";
-
-export type RoleScope = "PLATFORM" | "ORGANIZATION";
-
-export interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  createdAt: string;
-}
-
-export interface Role {
-  id: string;
-  name: string;
-  description: string | null;
-  scope: RoleScope;
-  isSystemRole: boolean;
-  permissions: Permission[];
-}
-
-export interface Membership {
-  id: string;
-  isOwner: boolean;
-  createdAt: string;
-  organizationId: string;
-  organization: Organization;
-  role: Role;
-}
+import type { User, Permission, Membership } from "./types";
 
 interface SessionContextType {
   user: User | null;
