@@ -71,6 +71,16 @@ export default function Home() {
     }
   }, [selectedThread?.id, configuredProviders, updateAgentConfigMultiple, loadModelsForProvider]);
 
+  // Auto-selecionar primeiro modelo quando modelos sao carregados e nao ha modelo configurado
+  useEffect(() => {
+    if (!selectedThread || availableModels.length === 0) return;
+
+    const agentConfig = selectedThread.agentConfig as BasicAgentConfig;
+    if (!agentConfig.model && availableModels.length > 0) {
+      updateAgentConfigMultiple(selectedThread.id, { model: availableModels[0].id });
+    }
+  }, [selectedThread?.id, availableModels, updateAgentConfigMultiple]);
+
   const handleNewChat = useCallback(async () => {
     await createThread();
   }, [createThread]);
