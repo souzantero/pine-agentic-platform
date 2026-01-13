@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/session";
-import { api, setCurrentOrgId } from "@/lib/api";
+import { api } from "@/lib/api";
+import { setCurrentOrgId } from "@/lib/storage";
 import type {
   Organization,
   UpdateOrganizationData,

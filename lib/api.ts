@@ -1,42 +1,9 @@
 // API Client para comunicação com o backend Python
 // Gerencia autenticação JWT automaticamente
 
+import { getToken } from "./storage";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8888";
-
-const TOKEN_KEY = "pinechat_token";
-const CURRENT_ORG_KEY = "pinechat_current_org";
-
-// Gestão do token JWT no localStorage
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function clearToken(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-// Gestão da organização atual no localStorage
-export function getCurrentOrgId(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(CURRENT_ORG_KEY);
-}
-
-export function setCurrentOrgId(orgId: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(CURRENT_ORG_KEY, orgId);
-}
-
-export function clearCurrentOrgId(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(CURRENT_ORG_KEY);
-}
 
 // Tipo para respostas de erro do FastAPI
 interface ApiError {

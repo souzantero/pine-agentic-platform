@@ -8,15 +8,15 @@ import {
   useEffect,
   ReactNode,
 } from "react";
+import { api } from "./api";
 import {
-  api,
   getToken,
   setToken,
   clearToken,
   getCurrentOrgId,
   setCurrentOrgId as saveCurrentOrgId,
   clearCurrentOrgId,
-} from "./api";
+} from "./storage";
 
 // Tipos
 export interface User {
