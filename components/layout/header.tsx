@@ -44,8 +44,14 @@ export function Header({ onMenuClick, onSettingsClick, showSettingsButton }: Hea
 
   const getInitials = () => {
     if (!user) return "?";
-    const email = user.email || "";
-    return email.charAt(0).toUpperCase();
+    if (user.name) {
+      const parts = user.name.trim().split(" ");
+      if (parts.length >= 2) {
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+      }
+      return user.name.charAt(0).toUpperCase();
+    }
+    return user.email.charAt(0).toUpperCase();
   };
 
   return (
@@ -88,8 +94,9 @@ export function Header({ onMenuClick, onSettingsClick, showSettingsButton }: Hea
             </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {user && (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                {user.email}
+              <div className="px-2 py-1.5">
+                <div className="text-sm font-medium">{user.name}</div>
+                <div className="text-xs text-muted-foreground">{user.email}</div>
               </div>
             )}
             <DropdownMenuItem

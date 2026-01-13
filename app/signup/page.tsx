@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/card";
 
 export default function SignupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -43,7 +44,7 @@ export default function SignupPage() {
       return;
     }
 
-    const result = await signUp(email, password);
+    const result = await signUp(email, password, name);
 
     if (result.error) {
       setError(result.error);
@@ -59,7 +60,7 @@ export default function SignupPage() {
             Criar conta
           </CardTitle>
           <CardDescription className="text-center">
-            Digite seu email e crie uma senha para se cadastrar
+            Preencha seus dados para criar sua conta
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSignup}>
@@ -69,6 +70,17 @@ export default function SignupPage() {
                 {error}
               </div>
             )}
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Seu nome"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
