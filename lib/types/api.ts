@@ -134,7 +134,6 @@ export interface ApiModelProvidersResponse {
 
 export interface ApiModelsResponse {
   models: ModelOption[];
-  selectedProvider: string | null;
   configuredProviders: string[];
 }
 

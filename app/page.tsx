@@ -25,6 +25,7 @@ export default function Home() {
     createThread,
     addMessage,
     updateAgentConfig,
+    updateAgentConfigMultiple,
     changeAgent,
   } = useThreads();
 
@@ -32,7 +33,6 @@ export default function Home() {
 
   const {
     models: availableModels,
-    selectedProvider,
     configuredProviders,
     loadModelsForProvider,
   } = useModels();
@@ -55,17 +55,21 @@ export default function Home() {
     }
   }, [authLoading, isLoggedIn, hasOrganization, router]);
 
-  // Auto-selecionar primeiro provider disponível se não tiver um selecionado
+  // Carregar modelos do provider configurado ou auto-selecionar primeiro disponivel
   useEffect(() => {
     if (!selectedThread || configuredProviders.length === 0) return;
 
     const agentConfig = selectedThread.agentConfig as BasicAgentConfig;
-    if (!agentConfig.provider) {
+    if (agentConfig.provider) {
+      // Provider ja configurado (do storage), carregar modelos compativeis
+      loadModelsForProvider(agentConfig.provider);
+    } else {
+      // Sem provider, auto-selecionar primeiro disponivel
       const defaultProvider = configuredProviders[0];
-      updateAgentConfig(selectedThread.id, "provider", defaultProvider);
+      updateAgentConfigMultiple(selectedThread.id, { provider: defaultProvider });
       loadModelsForProvider(defaultProvider);
     }
-  }, [selectedThread, configuredProviders, updateAgentConfig, loadModelsForProvider]);
+  }, [selectedThread?.id, configuredProviders, updateAgentConfigMultiple, loadModelsForProvider]);
 
   const handleNewChat = useCallback(async () => {
     await createThread();
@@ -91,12 +95,12 @@ export default function Home() {
     (provider: string) => {
       // Recarregar modelos para o novo provedor
       loadModelsForProvider(provider);
-      // Limpar modelo selecionado quando muda o provedor
+      // Atualizar provider e limpar modelo em uma unica operacao
       if (selectedId) {
-        updateAgentConfig(selectedId, "model", "");
+        updateAgentConfigMultiple(selectedId, { provider, model: "" });
       }
     },
-    [loadModelsForProvider, selectedId, updateAgentConfig]
+    [loadModelsForProvider, selectedId, updateAgentConfigMultiple]
   );
 
   const invokeAgentForThread = useCallback(
@@ -273,7 +277,6 @@ export default function Home() {
               onConfigChange={handleAgentConfigChange}
               availableModels={availableModels}
               systemPrompts={systemPrompts}
-              selectedProvider={selectedProvider}
               configuredProviders={configuredProviders}
               onProviderChange={handleProviderChange}
               expanded={settingsExpanded}
@@ -291,7 +294,6 @@ export default function Home() {
           onConfigChange={handleAgentConfigChange}
           availableModels={availableModels}
           systemPrompts={systemPrompts}
-          selectedProvider={selectedProvider}
           configuredProviders={configuredProviders}
           onProviderChange={handleProviderChange}
           open={mobileSettingsOpen}

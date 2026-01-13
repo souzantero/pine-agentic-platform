@@ -98,7 +98,6 @@ def get_available_models(
     models = MODELS_BY_PROVIDER.get(active_provider, []) if active_provider else []
 
     return ModelsResponse(
-        selected_provider=active_provider.value if active_provider else None,
         models=models,
         configured_providers=[p.value for p in configured_providers],
     )

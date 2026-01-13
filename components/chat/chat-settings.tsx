@@ -61,7 +61,6 @@ interface SettingsContentProps {
   onConfigChange: (key: string, value: unknown) => void;
   availableModels: ModelOption[];
   systemPrompts: SystemPrompt[];
-  selectedProvider: string | null;
   configuredProviders: string[];
   onProviderChange: (provider: string) => void;
 }
@@ -216,7 +215,6 @@ function SettingsContent({
   onConfigChange,
   availableModels,
   systemPrompts,
-  selectedProvider,
   configuredProviders,
   onProviderChange,
 }: SettingsContentProps) {
@@ -248,7 +246,7 @@ function SettingsContent({
           <div key={field.key}>
             {field.type === "provider" && (
               <ProviderField
-                value={selectedProvider}
+                value={(agentConfig[field.key] as string | null) ?? null}
                 onChange={onProviderChange}
                 configuredProviders={configuredProviders}
               />
@@ -299,7 +297,6 @@ export function ChatSettings({
   onConfigChange,
   availableModels,
   systemPrompts,
-  selectedProvider,
   configuredProviders,
   onProviderChange,
   expanded,
@@ -341,7 +338,6 @@ export function ChatSettings({
             onConfigChange={onConfigChange}
             availableModels={availableModels}
             systemPrompts={systemPrompts}
-            selectedProvider={selectedProvider}
             configuredProviders={configuredProviders}
             onProviderChange={onProviderChange}
           />
@@ -376,7 +372,6 @@ export function MobileChatSettings({
   onConfigChange,
   availableModels,
   systemPrompts,
-  selectedProvider,
   configuredProviders,
   onProviderChange,
   open,
@@ -397,7 +392,6 @@ export function MobileChatSettings({
           onConfigChange={onConfigChange}
           availableModels={availableModels}
           systemPrompts={systemPrompts}
-          selectedProvider={selectedProvider}
           configuredProviders={configuredProviders}
           onProviderChange={onProviderChange}
         />

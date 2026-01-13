@@ -335,6 +335,5 @@ class ModelInfo(CamelCaseModel):
 
 
 class ModelsResponse(CamelCaseModel):
-    selected_provider: str | None
     models: List[ModelInfo]
     configured_providers: List[str]
