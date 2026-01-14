@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   MessageSquare,
@@ -45,7 +45,17 @@ function SidebarContent({
   const pathname = usePathname();
   const { hasPermission } = useSession();
   const [menuExpanded, setMenuExpandedState] = useState(getMenuExpanded);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Manter menu de configurações aberto quando estiver em uma página de settings
+  const isInSettings = pathname === "/settings" || pathname === "/members";
+  const [settingsOpen, setSettingsOpen] = useState(isInSettings);
+
+  // Sincronizar estado do menu com a rota
+  useEffect(() => {
+    if (isInSettings) {
+      setSettingsOpen(true);
+    }
+  }, [isInSettings]);
 
   // Wrapper para persistir estado no storage
   const handleMenuExpandedChange = (expanded: boolean) => {
@@ -58,7 +68,12 @@ function SidebarContent({
   const canViewPrompts = hasPermission("PROMPTS_READ");
 
   // Determinar qual seção está ativa baseado na rota
-  const activeSection: NavSection = pathname === "/prompts" ? "prompts" : "threads";
+  const getActiveSection = (): NavSection => {
+    if (pathname === "/prompts") return "prompts";
+    if (pathname === "/settings" || pathname === "/members") return "settings";
+    return "threads";
+  };
+  const activeSection = getActiveSection();
 
   const handleSelect = (id: string) => {
     onSelect(id);
@@ -181,7 +196,12 @@ function SidebarContent({
                           <li>
                             <button
                               onClick={handleOrganizationClick}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm hover:bg-muted"
+                              className={cn(
+                                "w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm",
+                                pathname === "/settings"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "hover:bg-muted"
+                              )}
                             >
                               <Building2 className="h-4 w-4 shrink-0" />
                               <span>Organização</span>
@@ -192,7 +212,12 @@ function SidebarContent({
                           <li>
                             <button
                               onClick={handleMembersClick}
-                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm hover:bg-muted"
+                              className={cn(
+                                "w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-sm",
+                                pathname === "/members"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "hover:bg-muted"
+                              )}
                             >
                               <Users className="h-4 w-4 shrink-0" />
                               <span>Membros</span>
@@ -227,7 +252,12 @@ function SidebarContent({
                                 handleOrganizationClick();
                                 setSettingsOpen(false);
                               }}
-                              className="w-full flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors text-sm hover:bg-muted"
+                              className={cn(
+                                "w-full flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors text-sm",
+                                pathname === "/settings"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "hover:bg-muted"
+                              )}
                             >
                               <Building2 className="h-4 w-4 shrink-0" />
                               <span>Organização</span>
@@ -241,7 +271,12 @@ function SidebarContent({
                                 handleMembersClick();
                                 setSettingsOpen(false);
                               }}
-                              className="w-full flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors text-sm hover:bg-muted"
+                              className={cn(
+                                "w-full flex items-center gap-3 px-2 py-1.5 rounded-md transition-colors text-sm",
+                                pathname === "/members"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "hover:bg-muted"
+                              )}
                             >
                               <Users className="h-4 w-4 shrink-0" />
                               <span>Membros</span>

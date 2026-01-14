@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useSession } from "@/lib/session";
 import { useMembers, useInvites, useRoles } from "@/lib/hooks";
-import { Header } from "@/components/layout";
+import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,12 +13,11 @@ import {
   RemoveMemberDialog,
   InvitesList,
 } from "@/components/members";
-import { Users, Link as LinkIcon, ArrowLeft } from "lucide-react";
+import { Users, Link as LinkIcon } from "lucide-react";
 import type { Member } from "@/lib/types";
 
 export default function MembersPage() {
-  const router = useRouter();
-  const { user, isLoggedIn, isLoading: authLoading, hasOrganization, hasPermission } = useSession();
+  const { user, hasPermission } = useSession();
 
   // Hooks
   const {
@@ -45,17 +43,6 @@ export default function MembersPage() {
 
   const canInvite = hasPermission("MEMBERS_INVITE");
   const canManage = hasPermission("MEMBERS_MANAGE");
-
-  // Redirect se não autenticado
-  useEffect(() => {
-    if (!authLoading) {
-      if (!isLoggedIn) {
-        router.push("/login");
-      } else if (!hasOrganization) {
-        router.push("/onboarding");
-      }
-    }
-  }, [authLoading, isLoggedIn, hasOrganization, router]);
 
   // Handlers
   const handleCreateInvite = async (
@@ -85,94 +72,73 @@ export default function MembersPage() {
     setRemoveOpen(true);
   };
 
-  const isLoading = authLoading || membersLoading;
-
-  if (isLoading || !isLoggedIn || !hasOrganization) {
-    return null;
-  }
-
   return (
-    <div className="h-screen flex flex-col">
-      <Header />
-
-      <div className="flex-1 overflow-auto">
-        <div className="container max-w-4xl mx-auto py-6 px-4">
-          {/* Back button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mb-4"
-            onClick={() => router.push("/")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Users className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">Membros</h1>
-                <p className="text-muted-foreground">
-                  Gerencie os membros da sua organização
-                </p>
-              </div>
+    <AppLayout>
+      <div className="max-w-4xl mx-auto py-6 px-4">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Users className="h-6 w-6 text-primary" />
             </div>
-
-            {canInvite && (
-              <Button onClick={() => setCreateInviteOpen(true)}>
-                <LinkIcon className="h-4 w-4 mr-2" />
-                Criar Convite
-              </Button>
-            )}
+            <div>
+              <h1 className="text-2xl font-bold">Membros</h1>
+              <p className="text-muted-foreground">
+                Gerencie os membros da sua organização
+              </p>
+            </div>
           </div>
 
-          {/* Members Card */}
-          <Card className="mb-6">
+          {canInvite && (
+            <Button onClick={() => setCreateInviteOpen(true)}>
+              <LinkIcon className="h-4 w-4 mr-2" />
+              Criar Convite
+            </Button>
+          )}
+        </div>
+
+        {/* Members Card */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">
+              Membros ({members.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {membersLoading ? (
+              <div className="flex justify-center py-8 text-muted-foreground">
+                Carregando...
+              </div>
+            ) : (
+              <MemberList
+                members={members}
+                currentUserId={user?.id || ""}
+                canManage={canManage}
+                onChangeRole={openChangeRole}
+                onRemove={openRemove}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Invites Card */}
+        {canInvite && (
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">
-                Membros ({members.length})
+                Convites Pendentes ({invites.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {membersLoading ? (
+              {invitesLoading ? (
                 <div className="flex justify-center py-8 text-muted-foreground">
                   Carregando...
                 </div>
               ) : (
-                <MemberList
-                  members={members}
-                  currentUserId={user?.id || ""}
-                  canManage={canManage}
-                  onChangeRole={openChangeRole}
-                  onRemove={openRemove}
-                />
+                <InvitesList invites={invites} />
               )}
             </CardContent>
           </Card>
-
-          {/* Invites Card */}
-          {canInvite && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">
-                  Convites Pendentes ({invites.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {invitesLoading ? (
-                  <div className="flex justify-center py-8 text-muted-foreground">
-                    Carregando...
-                  </div>
-                ) : (
-                  <InvitesList invites={invites} />
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Dialogs */}
@@ -197,6 +163,6 @@ export default function MembersPage() {
         member={selectedMember}
         onRemove={handleRemove}
       />
-    </div>
+    </AppLayout>
   );
 }
