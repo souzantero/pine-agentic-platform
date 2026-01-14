@@ -8,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { MoreHorizontal, Shield, Crown, UserMinus } from "lucide-react";
 import type { Member } from "@/lib/types";
 
@@ -56,7 +55,7 @@ export function MemberList({
   }
 
   return (
-    <ScrollArea className="h-[calc(100vh-280px)]">
+    <div className="max-h-[400px] overflow-y-auto">
       {/* Desktop view - Table */}
       <div className="hidden md:block">
         <table className="w-full">
@@ -190,6 +189,6 @@ export function MemberList({
           </div>
         ))}
       </div>
-    </ScrollArea>
+    </div>
   );
 }
