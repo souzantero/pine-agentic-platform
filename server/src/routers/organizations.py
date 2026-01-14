@@ -41,6 +41,15 @@ ADMIN_PERMISSIONS = [
     Permission.PROMPTS_DELETE,
 ]
 
+# Permissoes padrao para role Membro
+MEMBER_PERMISSIONS = [
+    Permission.THREADS_READ,
+    Permission.THREADS_WRITE,
+    Permission.AGENTS_READ,
+    Permission.MEMBERS_READ,
+    Permission.PROMPTS_READ,
+]
+
 
 def create_admin_role(db: Session, organization_id: uuid.UUID) -> Role:
     """Cria a role Admin padrao para uma organizacao."""
@@ -56,6 +65,29 @@ def create_admin_role(db: Session, organization_id: uuid.UUID) -> Role:
 
     # Adiciona todas as permissoes de admin
     for permission in ADMIN_PERMISSIONS:
+        role_permission = RolePermission(
+            role_id=role.id,
+            permission=permission,
+        )
+        db.add(role_permission)
+
+    return role
+
+
+def create_member_role(db: Session, organization_id: uuid.UUID) -> Role:
+    """Cria a role Membro padrao para uma organizacao."""
+    role = Role(
+        organization_id=organization_id,
+        scope=RoleScope.ORGANIZATION,
+        name="Membro",
+        description="Membro com acesso basico",
+        is_system_role=True,
+    )
+    db.add(role)
+    db.flush()  # Para obter o ID da role
+
+    # Adiciona permissoes de membro
+    for permission in MEMBER_PERMISSIONS:
         role_permission = RolePermission(
             role_id=role.id,
             permission=permission,
@@ -90,8 +122,9 @@ def create_organization(
     db.add(organization)
     db.flush()  # Para obter o ID
 
-    # Cria a role Admin padrao
+    # Cria as roles padrao
     admin_role = create_admin_role(db, organization.id)
+    create_member_role(db, organization.id)
 
     # Adiciona o usuario como membro owner
     member = OrganizationMember(
