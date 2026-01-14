@@ -20,6 +20,7 @@ export function MobileThreadsDrawer({
   onNewChat,
   open,
   onOpenChange,
+  hasProviders = true,
 }: MobileThreadsDrawerProps) {
   const handleSelect = (id: string) => {
     onSelect(id);
@@ -44,6 +45,8 @@ export function MobileThreadsDrawer({
               size="default"
               onClick={handleNewChat}
               className="w-full"
+              disabled={!hasProviders}
+              title={hasProviders ? "Nova conversa" : "Configure um provedor primeiro"}
             >
               <Plus className="h-4 w-4" />
               <span className="ml-2">Nova conversa</span>

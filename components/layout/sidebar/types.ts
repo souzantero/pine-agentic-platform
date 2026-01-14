@@ -9,6 +9,7 @@ export interface SidebarProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onNewChat: () => void;
+  hasProviders?: boolean;
 }
 
 export interface MobileSidebarProps {
@@ -24,4 +25,5 @@ export interface MobileThreadsDrawerProps {
   onNewChat: () => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  hasProviders?: boolean;
 }

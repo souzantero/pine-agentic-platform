@@ -39,6 +39,7 @@ function SidebarContent({
   onItemClick,
   showMenuToggle = true,
   isMobile = false,
+  hasProviders = true,
 }: SidebarProps & { onItemClick?: () => void; showMenuToggle?: boolean; isMobile?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -265,8 +266,9 @@ function SidebarContent({
               variant="outline"
               size="default"
               onClick={handleNewChat}
-              title="Nova conversa"
+              title={hasProviders ? "Nova conversa" : "Configure um provedor primeiro"}
               className="w-full"
+              disabled={!hasProviders}
             >
               <Plus className="h-4 w-4" />
               <span className="ml-2">Nova conversa</span>

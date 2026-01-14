@@ -237,11 +237,14 @@ export default function Home() {
     return null;
   }
 
+  const hasProviders = configuredProviders.length > 0;
+
   const sidebarProps = {
     threads,
     selectedId,
     onSelect: selectThread,
     onNewChat: handleNewChat,
+    hasProviders,
   };
 
   return (
@@ -267,6 +270,7 @@ export default function Home() {
         onNewChat={handleNewChat}
         open={mobileThreadsOpen}
         onOpenChange={setMobileThreadsOpen}
+        hasProviders={hasProviders}
       />
 
       <div className="flex flex-1 overflow-hidden">
