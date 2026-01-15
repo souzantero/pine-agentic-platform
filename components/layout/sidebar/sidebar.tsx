@@ -10,6 +10,7 @@ import {
   Users,
   Settings,
   Building2,
+  Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ function SidebarContent({
 
   // Determinar qual seção está ativa baseado na rota
   const getActiveSection = (): NavSection => {
-    if (pathname === "/settings" || pathname === "/members") return "settings";
+    if (pathname === "/settings" || pathname === "/settings/members" || pathname.startsWith("/settings/")) return "settings";
     return "threads";
   };
   const activeSection = getActiveSection();
@@ -61,12 +62,17 @@ function SidebarContent({
   };
 
   const handleMembersClick = () => {
-    router.push("/members");
+    router.push("/settings/members");
     onItemClick?.();
   };
 
   const handleOrganizationClick = () => {
     router.push("/settings");
+    onItemClick?.();
+  };
+
+  const handleProvidersClick = () => {
+    router.push("/settings/providers");
     onItemClick?.();
   };
 
@@ -80,7 +86,7 @@ function SidebarContent({
     if (canManageOrg) {
       router.push("/settings");
     } else if (canViewMembers) {
-      router.push("/members");
+      router.push("/settings/members");
     }
     onItemClick?.();
   };
@@ -225,20 +231,36 @@ function SidebarContent({
           <nav className="p-2">
             <ul className="space-y-1">
               {canManageOrg && (
-                <li>
-                  <button
-                    onClick={handleOrganizationClick}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left",
-                      pathname === "/settings"
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted"
-                    )}
-                  >
-                    <Building2 className="h-4 w-4 shrink-0" />
-                    <span>Organização</span>
-                  </button>
-                </li>
+                <>
+                  <li>
+                    <button
+                      onClick={handleOrganizationClick}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left",
+                        pathname === "/settings"
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <Building2 className="h-4 w-4 shrink-0" />
+                      <span>Organização</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={handleProvidersClick}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left",
+                        pathname === "/settings/providers"
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <Plug className="h-4 w-4 shrink-0" />
+                      <span>Provedores</span>
+                    </button>
+                  </li>
+                </>
               )}
               {canViewMembers && (
                 <li>
@@ -246,7 +268,7 @@ function SidebarContent({
                     onClick={handleMembersClick}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left",
-                      pathname === "/members"
+                      pathname === "/settings/members"
                         ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted"
                     )}

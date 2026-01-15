@@ -90,7 +90,7 @@ pinechat/
 - Gestao de membros e roles
 - Threads de conversacao
 - Prompts de sistema
-- Configuracao de provedores de LLM (OpenAI, Anthropic, OpenRouter, Google)
+- Configuracao de provedores (LLM: OpenAI, OpenRouter, Anthropic, Google; Web Search: Tavily)
 
 ## Scripts
 
@@ -126,6 +126,6 @@ O backend expoe os seguintes endpoints:
 | `GET /organizations/{id}/members` | Listar membros |
 | `GET /organizations/{id}/roles` | Listar roles |
 | `GET /organizations/{id}/models` | Modelos disponiveis |
-| `GET /organizations/{id}/model-providers` | Provedores configurados |
+| `GET /organizations/{id}/providers` | Provedores configurados (LLM, Web Search) |
 
 Documentacao completa da API em: `http://localhost:8888/docs`

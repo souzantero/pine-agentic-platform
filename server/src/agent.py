@@ -3,7 +3,7 @@ from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.postgres.base import BaseCheckpointSaver
 
-from src.entities import ModelProvider
+from src.entities import Provider
 from src.env import openrouter_base_url
 from src.schemas import RunConfig
 
@@ -13,18 +13,18 @@ SYSTEM_PROMPT = "Voce e um assistente virtual de inteligencia artificial."
 
 
 def get_model(
-    provider: ModelProvider,
+    provider: Provider,
     api_key: str,
     model: str,
 ):
     """Cria o modelo de LLM baseado no provedor."""
-    if provider == ModelProvider.OPENAI:
+    if provider == Provider.OPENAI:
         return ChatOpenAI(
             model=model,
             temperature=TEMPERATURE,
             openai_api_key=api_key,
         )
-    elif provider == ModelProvider.OPENROUTER:
+    elif provider == Provider.OPENROUTER:
         return ChatOpenAI(
             model=model,
             temperature=TEMPERATURE,
@@ -39,7 +39,7 @@ search = DuckDuckGoSearchRun()
 
 
 def build_agent(
-    provider: ModelProvider,
+    provider: Provider,
     api_key: str,
     config: RunConfig,
     checkpointer: BaseCheckpointSaver | None = None,

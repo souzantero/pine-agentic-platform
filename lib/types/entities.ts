@@ -1,6 +1,6 @@
 // Entidades de domínio do frontend
 
-import type { Permission, RoleScope, ModelProviderType } from "./enums";
+import type { Permission, RoleScope, Provider, ProviderType } from "./enums";
 
 // ============================================
 // Usuário e Sessão
@@ -133,12 +133,13 @@ export interface ThreadWithMessages extends Thread {
 }
 
 // ============================================
-// Model Providers e Models
+// Providers e Models
 // ============================================
 
-export interface ModelProviderConfig {
+export interface ProviderConfig {
   id: string;
-  provider: ModelProviderType;
+  type: ProviderType;
+  provider: Provider;
   isActive: boolean;
 }
 

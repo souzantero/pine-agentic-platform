@@ -275,25 +275,27 @@ class ThreadResponse(CamelCaseModel):
 
 
 # =============================================================================
-# Model Provider Schemas
+# Provider Schemas
 # =============================================================================
 
 
-class CreateModelProviderRequest(CamelCaseModel):
-    provider: str
+class CreateProviderRequest(CamelCaseModel):
+    type: str  # LLM, WEB_SEARCH
+    provider: str  # OPENAI, TAVILY, etc.
     api_key: str
 
 
-class ModelProviderResponse(CamelCaseModel):
+class ProviderResponse(CamelCaseModel):
     id: uuid.UUID
+    type: str
     provider: str
     is_active: bool
     created_at: datetime
     updated_at: datetime
 
 
-class ModelProvidersListResponse(CamelCaseModel):
-    providers: List[ModelProviderResponse]
+class ProvidersListResponse(CamelCaseModel):
+    providers: List[ProviderResponse]
 
 
 # =============================================================================

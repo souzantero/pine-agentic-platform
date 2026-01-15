@@ -4,26 +4,32 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/session";
 import { api } from "@/lib/api";
 import type {
-  ModelProviderConfig,
-  ModelProviderType,
-  ApiModelProvidersResponse,
+  ProviderConfig,
+  ProviderType,
+  Provider,
+  ApiProvidersResponse,
   MutationResult,
 } from "@/lib/types";
 
-interface UseModelProvidersReturn {
-  providers: ModelProviderConfig[];
+interface UseProvidersReturn {
+  providers: ProviderConfig[];
   isLoading: boolean;
   error: string | null;
-  addProvider: (provider: ModelProviderType, apiKey: string) => Promise<MutationResult>;
+  addProvider: (
+    type: ProviderType,
+    provider: Provider,
+    apiKey: string
+  ) => Promise<MutationResult>;
   removeProvider: (id: string) => Promise<MutationResult>;
   refresh: () => Promise<void>;
+  getProvidersByType: (type: ProviderType) => ProviderConfig[];
 }
 
-export function useModelProviders(): UseModelProvidersReturn {
+export function useProviders(): UseProvidersReturn {
   const { currentMembership } = useSession();
   const orgId = currentMembership?.organizationId;
 
-  const [providers, setProviders] = useState<ModelProviderConfig[]>([]);
+  const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,8 +41,8 @@ export function useModelProviders(): UseModelProvidersReturn {
 
     try {
       setError(null);
-      const response = await api.get<ApiModelProvidersResponse>(
-        `/organizations/${orgId}/model-providers`
+      const response = await api.get<ApiProvidersResponse>(
+        `/organizations/${orgId}/providers`
       );
 
       if (response.error) {
@@ -60,15 +66,19 @@ export function useModelProviders(): UseModelProvidersReturn {
   }, [loadProviders]);
 
   const addProvider = useCallback(
-    async (provider: ModelProviderType, apiKey: string): Promise<MutationResult> => {
+    async (
+      type: ProviderType,
+      provider: Provider,
+      apiKey: string
+    ): Promise<MutationResult> => {
       if (!orgId) {
         return { error: "Organização não selecionada" };
       }
 
       try {
-        const response = await api.post<ModelProviderConfig>(
-          `/organizations/${orgId}/model-providers`,
-          { provider, apiKey }
+        const response = await api.post<ProviderConfig>(
+          `/organizations/${orgId}/providers`,
+          { type, provider, apiKey }
         );
 
         if (response.error) {
@@ -94,7 +104,7 @@ export function useModelProviders(): UseModelProvidersReturn {
 
       try {
         const response = await api.delete(
-          `/organizations/${orgId}/model-providers/${id}`
+          `/organizations/${orgId}/providers/${id}`
         );
 
         if (response.error) {
@@ -117,6 +127,13 @@ export function useModelProviders(): UseModelProvidersReturn {
     await loadProviders();
   }, [loadProviders]);
 
+  const getProvidersByType = useCallback(
+    (type: ProviderType): ProviderConfig[] => {
+      return providers.filter((p) => p.type === type);
+    },
+    [providers]
+  );
+
   return {
     providers,
     isLoading,
@@ -124,5 +141,6 @@ export function useModelProviders(): UseModelProvidersReturn {
     addProvider,
     removeProvider,
     refresh,
+    getProvidersByType,
   };
 }

@@ -1,6 +1,6 @@
 // Tipos de resposta da API (espelham o formato do backend)
 
-import type { ModelProviderType } from "./enums";
+import type { Provider, ProviderType } from "./enums";
 import type { ModelOption } from "./entities";
 
 // ============================================
@@ -103,17 +103,18 @@ export interface ApiOrganization {
 }
 
 // ============================================
-// Model Providers
+// Providers
 // ============================================
 
-export interface ApiModelProvider {
+export interface ApiProvider {
   id: string;
-  provider: ModelProviderType;
+  type: ProviderType;
+  provider: Provider;
   isActive: boolean;
 }
 
-export interface ApiModelProvidersResponse {
-  providers: ApiModelProvider[];
+export interface ApiProvidersResponse {
+  providers: ApiProvider[];
 }
 
 // ============================================

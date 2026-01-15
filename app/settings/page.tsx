@@ -3,55 +3,36 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session";
-import { useOrganization, useModelProviders } from "@/lib/hooks";
-import { MODEL_PROVIDERS } from "@/lib/types";
-import type { ModelProviderType } from "@/lib/types";
+import { useOrganization } from "@/lib/hooks";
 import { AppLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Settings, Check, Eye, EyeOff, Trash2, Plus } from "lucide-react";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Building2, Check } from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { isLoading: authLoading, hasPermission } = useSession();
 
-  // Hooks
   const {
     organization,
     isLoading: orgLoading,
     updateOrganization,
   } = useOrganization();
 
-  const {
-    providers: modelProviders,
-    isLoading: providersLoading,
-    addProvider,
-    removeProvider,
-  } = useModelProviders();
-
-  // Estados do formulário de organização (inicializados como undefined para detectar edição)
+  // Estados do formulário de organização
   const [name, setName] = useState<string | undefined>(undefined);
   const [slug, setSlug] = useState<string | undefined>(undefined);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  // Estados para adicionar provedor
-  const [newProviderType, setNewProviderType] = useState<ModelProviderType | "">("");
-  const [newApiKey, setNewApiKey] = useState("");
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [savingProvider, setSavingProvider] = useState(false);
-  const [providerError, setProviderError] = useState<string | null>(null);
-  const [providerSuccess, setProviderSuccess] = useState(false);
 
   const canManage = hasPermission("ORGANIZATION_MANAGE");
 
@@ -62,11 +43,11 @@ export default function SettingsPage() {
     }
   }, [authLoading, canManage, router]);
 
-  // Valores do formulário (estado local tem precedência sobre dados do servidor)
+  // Valores do formulário
   const nameValue = name ?? organization?.name ?? "";
   const slugValue = slug ?? organization?.slug ?? "";
 
-  // Handlers de organização
+  // Handler de submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -74,7 +55,10 @@ export default function SettingsPage() {
     setSuccess(false);
     setSaving(true);
 
-    const result = await updateOrganization({ name: nameValue, slug: slugValue });
+    const result = await updateOrganization({
+      name: nameValue,
+      slug: slugValue,
+    });
 
     if (result.error) {
       setError(result.error);
@@ -86,48 +70,10 @@ export default function SettingsPage() {
     setSaving(false);
   };
 
-  // Handlers de provedores
-  const handleAddProvider = async () => {
-    if (!newProviderType || !newApiKey.trim()) {
-      setProviderError("Selecione um provedor e insira a API Key");
-      return;
-    }
-
-    setProviderError(null);
-    setProviderSuccess(false);
-    setSavingProvider(true);
-
-    const result = await addProvider(newProviderType, newApiKey);
-
-    if (result.error) {
-      setProviderError(result.error);
-    } else {
-      setProviderSuccess(true);
-      setNewProviderType("");
-      setNewApiKey("");
-      setShowApiKey(false);
-      setTimeout(() => setProviderSuccess(false), 3000);
-    }
-
-    setSavingProvider(false);
-  };
-
-  const handleRemoveProvider = async (providerId: string) => {
-    const result = await removeProvider(providerId);
-    if (result.error) {
-      setProviderError(result.error);
-    }
-  };
-
-  // Provedores disponíveis para adicionar
-  const availableProviders = MODEL_PROVIDERS.filter(
-    (p) => !modelProviders.some((mp) => mp.provider === p.value)
-  );
-
   const hasChanges =
     organization && (name !== organization.name || slug !== organization.slug);
 
-  const isLoading = authLoading || orgLoading || providersLoading;
+  const isLoading = authLoading || orgLoading;
 
   if (isLoading || !canManage) {
     return null;
@@ -138,12 +84,12 @@ export default function SettingsPage() {
       <div className="max-w-2xl mx-auto py-6 px-4">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-primary/10 rounded-lg">
-            <Settings className="h-6 w-6 text-primary" />
+            <Building2 className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Configurações</h1>
+            <h1 className="text-2xl font-bold">Organização</h1>
             <p className="text-muted-foreground">
-              Gerencie as configurações da sua organização
+              Gerencie as informações da sua organização
             </p>
           </div>
         </div>
@@ -203,156 +149,11 @@ export default function SettingsPage() {
               </div>
 
               <div className="pt-4">
-                <Button
-                  type="submit"
-                  disabled={saving || !hasChanges}
-                >
+                <Button type="submit" disabled={saving || !hasChanges}>
                   {saving ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Card de Provedores de LLM */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Provedores de LLM</CardTitle>
-            <CardDescription>
-              Configure as API Keys dos provedores de IA que deseja utilizar
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Lista de provedores configurados */}
-            {modelProviders.length > 0 && (
-              <div className="space-y-3">
-                <Label>Provedores Configurados</Label>
-                <div className="space-y-2">
-                  {modelProviders.map((provider) => {
-                    const providerInfo = MODEL_PROVIDERS.find(
-                      (p) => p.value === provider.provider
-                    );
-                    return (
-                      <div
-                        key={provider.id}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-md"
-                      >
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {providerInfo?.label}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            API Key configurada
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveProvider(provider.id)}
-                          title="Remover provedor"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Formulário para adicionar novo provedor */}
-            {availableProviders.length > 0 && (
-              <div className="space-y-4 pt-4 border-t">
-                <Label>Adicionar Provedor</Label>
-
-                {providerError && (
-                  <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950/50 rounded-md">
-                    {providerError}
-                  </div>
-                )}
-
-                {providerSuccess && (
-                  <div className="p-3 text-sm text-green-600 bg-green-50 dark:bg-green-950/50 rounded-md flex items-center gap-2">
-                    <Check className="h-4 w-4" />
-                    Provedor configurado com sucesso!
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Select
-                    value={newProviderType}
-                    onValueChange={(value) =>
-                      setNewProviderType(value as ModelProviderType)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um provedor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableProviders.map((provider) => (
-                        <SelectItem key={provider.value} value={provider.value}>
-                          {provider.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Input
-                      type={showApiKey ? "text" : "password"}
-                      placeholder={
-                        newProviderType
-                          ? MODEL_PROVIDERS.find((p) => p.value === newProviderType)
-                              ?.placeholder
-                          : "Selecione um provedor primeiro"
-                      }
-                      value={newApiKey}
-                      onChange={(e) => setNewApiKey(e.target.value)}
-                      disabled={!newProviderType}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full"
-                      onClick={() => setShowApiKey(!showApiKey)}
-                      disabled={!newProviderType}
-                    >
-                      {showApiKey ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    A API Key será armazenada de forma segura
-                  </p>
-                </div>
-
-                <Button
-                  onClick={handleAddProvider}
-                  disabled={savingProvider || !newProviderType || !newApiKey}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {savingProvider ? "Salvando..." : "Adicionar Provedor"}
-                </Button>
-              </div>
-            )}
-
-            {availableProviders.length === 0 && modelProviders.length > 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Todos os provedores disponíveis já foram configurados
-              </p>
-            )}
-
-            {modelProviders.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum provedor configurado. Adicione um provedor para começar.
-              </p>
-            )}
           </CardContent>
         </Card>
       </div>

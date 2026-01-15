@@ -107,7 +107,7 @@ All API routes are served by the Python backend at `localhost:8888`:
 - `/organizations/{org_id}/invites` - Organization invites
 - `/organizations/{org_id}/roles` - Role management
 - `/organizations/{org_id}/models` - Available AI models
-- `/organizations/{org_id}/model-providers` - LLM provider configuration
+- `/organizations/{org_id}/providers` - Provider configuration (LLM, Web Search, etc.)
 - `/invites/{token}` - Public invite info and accept
 
 ### UI Components
@@ -122,7 +122,7 @@ All API routes are served by the Python backend at `localhost:8888`:
 2. `/onboarding` - Organization creation (requires auth, no org)
 3. `/invite/[token]` - Accept organization invites
 4. `/` - Main chat interface (requires auth + active org)
-5. `/members`, `/settings`, `/prompts` - Organization management
+5. `/settings`, `/settings/members`, `/settings/providers` - Organization management
 
 ## Code Conventions
 

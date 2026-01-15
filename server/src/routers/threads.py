@@ -11,7 +11,7 @@ from sqlmodel import col, select
 from src.agent import build_agent
 from src.auth import CurrentMembership, CurrentUser, check_permission
 from src.database import DatabaseSession, get_checkpoint_saver
-from src.entities import ModelProvider, OrganizationModelProvider, Permission, Thread
+from src.entities import OrganizationProvider, Permission, Provider, ProviderType, Thread
 from src.helpers import agent_messages_to_list, chunk_to_text, get_config
 from src.schemas import CreateThreadRequest, RunRequest, ThreadResponse, UpdateThreadRequest
 
@@ -24,10 +24,10 @@ def get_provider_api_key(
     db: DatabaseSession,
     organization_id: uuid.UUID,
     provider_str: str,
-) -> tuple[ModelProvider, str]:
-    """Busca a API key do provedor configurado na organizacao."""
+) -> tuple[Provider, str]:
+    """Busca a API key do provedor LLM configurado na organizacao."""
     try:
-        provider = ModelProvider(provider_str)
+        provider = Provider(provider_str)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -35,17 +35,18 @@ def get_provider_api_key(
         )
 
     # Apenas OpenAI e OpenRouter suportados
-    if provider not in [ModelProvider.OPENAI, ModelProvider.OPENROUTER]:
+    if provider not in [Provider.OPENAI, Provider.OPENROUTER]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Provedor {provider_str} nao suportado. Use OPENAI ou OPENROUTER.",
         )
 
-    # Busca a configuracao do provedor
-    statement = select(OrganizationModelProvider).where(
-        OrganizationModelProvider.organization_id == organization_id,
-        OrganizationModelProvider.provider == provider,
-        OrganizationModelProvider.is_active == True,
+    # Busca a configuracao do provedor LLM
+    statement = select(OrganizationProvider).where(
+        OrganizationProvider.organization_id == organization_id,
+        OrganizationProvider.type == ProviderType.LLM,
+        OrganizationProvider.provider == provider,
+        OrganizationProvider.is_active == True,
     )
     org_provider = db.exec(statement).first()
 

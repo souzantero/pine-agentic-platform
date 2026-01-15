@@ -19,18 +19,55 @@ export type Permission =
 // Escopo de roles
 export type RoleScope = "PLATFORM" | "ORGANIZATION";
 
-// Provedores de modelos de IA
-export type ModelProviderType = "OPENAI" | "OPENROUTER";
+// Tipos de provedores
+export type ProviderType = "LLM" | "WEB_SEARCH";
+
+// Provedores disponíveis
+export type Provider =
+  | "OPENAI"
+  | "OPENROUTER"
+  | "ANTHROPIC"
+  | "GOOGLE"
+  | "TAVILY";
 
 // Informações de UI dos provedores
-export interface ModelProviderInfo {
-  value: ModelProviderType;
+export interface ProviderInfo {
+  value: Provider;
   label: string;
   placeholder: string;
 }
 
-// Constante com lista de provedores disponíveis
-export const MODEL_PROVIDERS: ModelProviderInfo[] = [
-  { value: "OPENAI", label: "OpenAI", placeholder: "sk-..." },
-  { value: "OPENROUTER", label: "OpenRouter", placeholder: "sk-or-..." },
+// Informações de UI dos tipos de provedores
+export interface ProviderTypeInfo {
+  value: ProviderType;
+  label: string;
+  description: string;
+  providers: ProviderInfo[];
+}
+
+// Constante com lista de tipos e seus provedores
+export const PROVIDER_TYPES: ProviderTypeInfo[] = [
+  {
+    value: "LLM",
+    label: "Modelos de IA",
+    description: "Provedores de modelos de linguagem para o chat",
+    providers: [
+      { value: "OPENAI", label: "OpenAI", placeholder: "sk-..." },
+      { value: "OPENROUTER", label: "OpenRouter", placeholder: "sk-or-..." },
+    ],
+  },
+  {
+    value: "WEB_SEARCH",
+    label: "Busca na Web",
+    description: "Provedores de busca na web para o agente",
+    providers: [
+      { value: "TAVILY", label: "Tavily", placeholder: "tvly-..." },
+    ],
+  },
 ];
+
+// Helper para obter provedores de um tipo específico
+export function getProvidersForType(type: ProviderType): ProviderInfo[] {
+  const providerType = PROVIDER_TYPES.find((pt) => pt.value === type);
+  return providerType?.providers || [];
+}

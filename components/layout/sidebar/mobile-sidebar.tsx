@@ -31,7 +31,7 @@ function MobileMenuContent({
 
   // Determinar qual seção está ativa baseado na rota
   const getActiveSection = (): NavSection => {
-    if (pathname === "/settings" || pathname === "/members") return "settings";
+    if (pathname === "/settings" || pathname.startsWith("/settings/")) return "settings";
     return "threads";
   };
   const activeSection = getActiveSection();

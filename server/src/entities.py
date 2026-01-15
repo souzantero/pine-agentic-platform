@@ -46,13 +46,23 @@ class Permission(str, Enum):
     PLATFORM_MANAGE = "PLATFORM_MANAGE"
 
 
-class ModelProvider(str, Enum):
-    """Provedor de modelos de IA"""
+class ProviderType(str, Enum):
+    """Tipo de provedor"""
 
+    LLM = "LLM"
+    WEB_SEARCH = "WEB_SEARCH"
+
+
+class Provider(str, Enum):
+    """Provedores disponiveis"""
+
+    # LLM
     OPENAI = "OPENAI"
     OPENROUTER = "OPENROUTER"
     ANTHROPIC = "ANTHROPIC"
     GOOGLE = "GOOGLE"
+    # Web Search
+    TAVILY = "TAVILY"
 
 
 # =============================================================================
@@ -96,25 +106,26 @@ class Organization(SQLModel, table=True):
     roles: list["Role"] = Relationship(back_populates="organization")
     invites: list["OrganizationInvite"] = Relationship(back_populates="organization")
     threads: list["Thread"] = Relationship(back_populates="organization")
-    model_providers: list["OrganizationModelProvider"] = Relationship(back_populates="organization")
+    providers: list["OrganizationProvider"] = Relationship(back_populates="organization")
 
 
-class OrganizationModelProvider(SQLModel, table=True):
-    """Configuracoes de provedores de modelos por organizacao"""
+class OrganizationProvider(SQLModel, table=True):
+    """Configuracoes de provedores por organizacao"""
 
-    __tablename__ = "organization_model_providers"
-    __table_args__ = (UniqueConstraint("organization_id", "provider"),)
+    __tablename__ = "organization_providers"
+    __table_args__ = (UniqueConstraint("organization_id", "type", "provider"),)
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     organization_id: uuid.UUID = Field(foreign_key="organizations.id", index=True)
-    provider: ModelProvider
+    type: ProviderType
+    provider: Provider
     api_key: str
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=get_now)
     updated_at: datetime = Field(default_factory=get_now, sa_column_kwargs={"onupdate": get_now})
 
     # Relationships
-    organization: Organization = Relationship(back_populates="model_providers")
+    organization: Organization = Relationship(back_populates="providers")
 
 
 class Role(SQLModel, table=True):
