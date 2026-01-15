@@ -71,3 +71,32 @@ export function getProvidersForType(type: ProviderType): ProviderInfo[] {
   const providerType = PROVIDER_TYPES.find((pt) => pt.value === type);
   return providerType?.providers || [];
 }
+
+// Tipos de configuração da organização
+export type ConfigType = "TOOL";
+
+// Chaves de configuração
+export type ConfigKey = "WEB_SEARCH";
+
+// Informações de UI das ferramentas
+export interface ToolInfo {
+  key: ConfigKey;
+  label: string;
+  description: string;
+  providers: Provider[]; // Provedores compatíveis com esta ferramenta
+}
+
+// Constante com lista de ferramentas disponíveis
+export const TOOLS: ToolInfo[] = [
+  {
+    key: "WEB_SEARCH",
+    label: "Busca na Web",
+    description: "Permite ao agente buscar informações na internet",
+    providers: ["TAVILY"],
+  },
+];
+
+// Helper para obter informações de uma ferramenta
+export function getToolInfo(key: ConfigKey): ToolInfo | undefined {
+  return TOOLS.find((t) => t.key === key);
+}

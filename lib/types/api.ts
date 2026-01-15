@@ -127,6 +127,24 @@ export interface ApiModelsResponse {
 }
 
 // ============================================
+// Organization Configs
+// ============================================
+
+export interface ApiOrgConfig {
+  id: string;
+  type: string;
+  key: string;
+  isEnabled: boolean;
+  config: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiOrgConfigsResponse {
+  configs: ApiOrgConfig[];
+}
+
+// ============================================
 // Agent Run (Invoke/Stream)
 // ============================================
 

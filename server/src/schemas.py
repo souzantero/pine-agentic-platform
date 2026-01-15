@@ -312,3 +312,34 @@ class ModelInfo(CamelCaseModel):
 class ModelsResponse(CamelCaseModel):
     models: List[ModelInfo]
     configured_providers: List[str]
+
+
+# =============================================================================
+# Organization Config Schemas
+# =============================================================================
+
+
+class CreateOrgConfigRequest(CamelCaseModel):
+    type: str  # TOOL, FEATURE, etc.
+    key: str  # WEB_SEARCH, etc.
+    is_enabled: bool = True
+    config: dict = {}  # Configuracoes especificas
+
+
+class UpdateOrgConfigRequest(CamelCaseModel):
+    is_enabled: bool | None = None
+    config: dict | None = None  # Configuracoes especificas
+
+
+class OrgConfigResponse(CamelCaseModel):
+    id: uuid.UUID
+    type: str
+    key: str
+    is_enabled: bool
+    config: dict
+    created_at: datetime
+    updated_at: datetime
+
+
+class OrgConfigsListResponse(CamelCaseModel):
+    configs: List[OrgConfigResponse]

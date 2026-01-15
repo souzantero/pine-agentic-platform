@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from enum import Enum
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import JSON, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -65,6 +65,18 @@ class Provider(str, Enum):
     TAVILY = "TAVILY"
 
 
+class ConfigType(str, Enum):
+    """Tipos de configuracao da organizacao"""
+
+    TOOL = "TOOL"
+
+
+class ConfigKey(str, Enum):
+    """Chaves de configuracao (identificador especifico)"""
+
+    WEB_SEARCH = "WEB_SEARCH"
+
+
 # =============================================================================
 # MODELS
 # =============================================================================
@@ -107,6 +119,7 @@ class Organization(SQLModel, table=True):
     invites: list["OrganizationInvite"] = Relationship(back_populates="organization")
     threads: list["Thread"] = Relationship(back_populates="organization")
     providers: list["OrganizationProvider"] = Relationship(back_populates="organization")
+    configs: list["OrganizationConfig"] = Relationship(back_populates="organization")
 
 
 class OrganizationProvider(SQLModel, table=True):
@@ -231,3 +244,22 @@ class OrganizationInvite(SQLModel, table=True):
         back_populates="invites_accepted",
         sa_relationship_kwargs={"foreign_keys": "[OrganizationInvite.used_by_id]"},
     )
+
+
+class OrganizationConfig(SQLModel, table=True):
+    """Configuracoes genericas por organizacao"""
+
+    __tablename__ = "organization_configs"
+    __table_args__ = (UniqueConstraint("organization_id", "type", "key"),)
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: uuid.UUID = Field(foreign_key="organizations.id", index=True)
+    type: ConfigType  # TOOL, FEATURE, etc.
+    key: ConfigKey  # WEB_SEARCH, etc.
+    is_enabled: bool = Field(default=True)
+    config: dict = Field(default_factory=dict, sa_type=JSON)  # Configuracoes especificas
+    created_at: datetime = Field(default_factory=get_now)
+    updated_at: datetime = Field(default_factory=get_now, sa_column_kwargs={"onupdate": get_now})
+
+    # Relationships
+    organization: Organization = Relationship(back_populates="configs")

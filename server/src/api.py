@@ -2,7 +2,7 @@ import src.env  # noqa: F401
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.routers import auth, invites, members, models, organizations, providers, roles, threads
+from src.routers import auth, configs, invites, members, models, organizations, providers, roles, threads
 
 app = FastAPI(title="PineChat API", version="1.0.0")
 
@@ -24,3 +24,4 @@ app.include_router(roles.router)
 app.include_router(threads.router)
 app.include_router(providers.router)
 app.include_router(models.router)
+app.include_router(configs.router)

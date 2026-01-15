@@ -1,6 +1,6 @@
 // Entidades de domínio do frontend
 
-import type { Permission, RoleScope, Provider, ProviderType } from "./enums";
+import type { Permission, RoleScope, Provider, ProviderType, ConfigType, ConfigKey } from "./enums";
 
 // ============================================
 // Usuário e Sessão
@@ -147,4 +147,25 @@ export interface ModelOption {
   id: string;
   name: string;
   description?: string;
+}
+
+// ============================================
+// Organization Configs
+// ============================================
+
+export interface WebSearchConfig {
+  provider?: string;
+  summarizationProvider?: string;
+  summarizationModel?: string;
+  summarizationMaxTokens?: number;
+  maxContentLength?: number;
+  maxOutputRetries?: number;
+}
+
+export interface OrgConfig {
+  id: string;
+  type: ConfigType;
+  key: ConfigKey;
+  isEnabled: boolean;
+  config: WebSearchConfig | Record<string, unknown>;
 }
