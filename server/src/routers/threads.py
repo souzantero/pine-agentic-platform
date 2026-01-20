@@ -8,10 +8,10 @@ from fastapi.responses import StreamingResponse
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from sqlmodel import col, select
 
-from src.agents.agent import build_agent
+from src.agents.agent import build_agent, AgentContext
 from src.auth import CurrentMembership, CurrentUser, check_permission
 from src.database import DatabaseSession, get_checkpoint_saver
-from src.entities import OrganizationProvider, Permission, Provider, ProviderType, Thread
+from src.entities import Organization, OrganizationProvider, Permission, Provider, ProviderType, Thread
 from src.helpers import agent_messages_to_list, chunk_to_text, get_config
 from src.schemas import CreateThreadRequest, RunRequest, ThreadResponse, UpdateThreadRequest
 
@@ -294,6 +294,21 @@ async def invoke_run(
     # Obtem api_key do provedor
     provider, api_key = get_provider_api_key(db, organization_id, payload.config.provider)
 
+    # Busca dados da organizacao para o contexto
+    organization = db.get(Organization, organization_id)
+    if not organization:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organizacao nao encontrada",
+        )
+
+    agent_context = AgentContext(
+        organization_id=str(organization_id),
+        organization_name=organization.name,
+        user_id=str(current_user.id),
+        user_name=current_user.name,
+    )
+
     agent = build_agent(
         db=db,
         organization_id=organization_id,
@@ -304,7 +319,9 @@ async def invoke_run(
     )
     messages = [m.to_agent() for m in payload.input.messages]
     state_values = await agent.ainvoke(
-        {"messages": messages}, config=get_config(thread_id)
+        {"messages": messages},
+        config=get_config(thread_id),
+        context=agent_context,
     )
     state_messages = state_values.get("messages", [])
 
@@ -341,6 +358,21 @@ async def stream_run(
     # Obtem api_key do provedor
     provider, api_key = get_provider_api_key(db, organization_id, payload.config.provider)
 
+    # Busca dados da organizacao para o contexto
+    organization = db.get(Organization, organization_id)
+    if not organization:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organizacao nao encontrada",
+        )
+
+    agent_context = AgentContext(
+        organization_id=str(organization_id),
+        organization_name=organization.name,
+        user_id=str(current_user.id),
+        user_name=current_user.name,
+    )
+
     agent = build_agent(
         db=db,
         organization_id=organization_id,
@@ -363,6 +395,7 @@ async def stream_run(
             async for event in agent.astream_events(
                 {"messages": messages},
                 config=thread_config,
+                context=agent_context,
             ):
                 event_name = event.get("event")
                 if event_name == "on_chat_model_stream":
