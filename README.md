@@ -1,4 +1,4 @@
-# PineChat
+# PineAI
 
 Aplicacao de chat com integracao de agentes de IA e gestao multi-tenant de organizacoes.
 
@@ -64,7 +64,7 @@ Acesse [http://localhost:3000](http://localhost:3000)
 ## Estrutura do Projeto
 
 ```
-pinechat/
+pineai/
 ├── app/                    # Next.js pages e layouts
 ├── components/             # React components
 │   └── ui/                 # shadcn/ui primitives

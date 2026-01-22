@@ -1,10 +1,10 @@
 // Gestão de dados no localStorage
 // Centraliza o acesso ao storage para token JWT, organização atual e configurações de threads
 
-const TOKEN_KEY = "pinechat_token";
-const CURRENT_ORG_KEY = "pinechat_current_org";
-const THREAD_CONFIG_PREFIX = "pinechat_thread_";
-const MENU_EXPANDED_KEY = "pinechat_menu_expanded";
+const TOKEN_KEY = "pineai_token";
+const CURRENT_ORG_KEY = "pineai_current_org";
+const THREAD_CONFIG_PREFIX = "pineai_thread_";
+const MENU_EXPANDED_KEY = "pineai_menu_expanded";
 
 // Token JWT
 export function getToken(): string | null {
@@ -39,7 +39,7 @@ export function clearCurrentOrgId(): void {
 }
 
 // Configurações específicas por thread
-// Chave: pinechat_thread_{threadId}
+// Chave: pineai_thread_{threadId}
 export function getThreadConfig<T>(threadId: string): T | null {
   if (typeof window === "undefined") return null;
   const key = THREAD_CONFIG_PREFIX + threadId;

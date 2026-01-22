@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-PineChat is a chat application with AI agent integration and multi-tenant organization management. The project uses a decoupled architecture:
+PineAI is a platform with AI agent integration and multi-tenant organization management. The project uses a decoupled architecture:
 
 - **Frontend**: Next.js 16.1 + React 19 (TypeScript)
 - **Backend**: Python FastAPI with SQLAlchemy ORM and PostgreSQL
@@ -64,9 +64,9 @@ The app implements role-based access control with organization scoping:
 ### Authentication Flow
 
 1. User logs in via `/auth/login` endpoint, receives JWT token
-2. Token is stored in localStorage (`pinechat_token`) via `lib/storage.ts`
+2. Token is stored in localStorage (`pineai_token`) via `lib/storage.ts`
 3. `SessionProvider` (lib/session.tsx) manages user state and calls `/auth/me` to validate session
-4. Current organization ID is stored in localStorage (`pinechat_current_org`)
+4. Current organization ID is stored in localStorage (`pineai_current_org`)
 5. All API calls include `Authorization: Bearer <token>` header via `lib/api.ts`
 
 ### Key Files

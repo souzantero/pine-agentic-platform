@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pine Chat",
-  description: "Chat com agentes de IA",
+  title: "PineAI",
+  description: "Plataforma de agentes de IA",
 };
 
 export default function RootLayout({

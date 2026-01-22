@@ -106,7 +106,7 @@ export default function OnboardingPage() {
             Criar Organização
           </CardTitle>
           <CardDescription className="text-center">
-            Crie sua organização para começar a usar o Pine Chat
+            Crie sua organização para começar a usar o PineAI
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
