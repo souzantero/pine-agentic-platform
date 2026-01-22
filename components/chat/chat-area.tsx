@@ -89,13 +89,6 @@ export function ChatArea({ messages, onSendMessage, isLoading, disabled }: ChatA
               </div>
             ))
           )}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-muted rounded-lg px-3 py-2 md:px-4">
-                <p className="text-muted-foreground text-sm md:text-base">Digitando...</p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

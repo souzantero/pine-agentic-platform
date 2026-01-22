@@ -125,7 +125,6 @@ export interface Message {
 export interface ChatConfig {
   provider: string | null;
   model: string;
-  streamMode: boolean;
 }
 
 export interface ThreadWithMessages extends Thread {

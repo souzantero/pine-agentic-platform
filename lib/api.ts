@@ -2,7 +2,7 @@
 // Gerencia autenticação JWT automaticamente
 
 import { getToken } from "./storage";
-import type { InvokePayload, InvokeResponse, AgentMessage } from "./types";
+import type { StreamPayload, AgentMessage } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8888";
 
@@ -86,16 +86,6 @@ export const api = {
     request<T>(endpoint, { ...options, method: "DELETE" }),
 };
 
-// Funcao para invocar execucao
-export async function invokeRun(
-  organizationId: string,
-  threadId: string,
-  payload: InvokePayload
-): Promise<{ data?: InvokeResponse; error?: string }> {
-  const endpoint = `/organizations/${organizationId}/threads/${threadId}/runs/invoke`;
-  return api.post<InvokeResponse>(endpoint, payload);
-}
-
 // Funcao para buscar mensagens de uma thread
 export async function getThreadMessages(
   organizationId: string,
@@ -107,7 +97,7 @@ export async function getThreadMessages(
 
 // Tipos para eventos de streaming
 interface StreamEvent {
-  event: "chunk" | "final" | "done" | "error";
+  event: "chunk" | "status" | "final" | "done" | "error";
   content?: string;
   messages?: AgentMessage[];
   detail?: string;
@@ -116,6 +106,7 @@ interface StreamEvent {
 // Callbacks para streaming
 export interface StreamCallbacks {
   onChunk: (content: string) => void;
+  onStatus?: (status: string) => void;
   onFinal: (messages: AgentMessage[]) => void;
   onError: (error: string) => void;
 }
@@ -124,7 +115,7 @@ export interface StreamCallbacks {
 export async function streamRun(
   organizationId: string,
   threadId: string,
-  payload: InvokePayload,
+  payload: StreamPayload,
   callbacks: StreamCallbacks
 ): Promise<void> {
   const token = getToken();
@@ -183,6 +174,11 @@ export async function streamRun(
             case "chunk":
               if (event.content) {
                 callbacks.onChunk(event.content);
+              }
+              break;
+            case "status":
+              if (callbacks.onStatus) {
+                callbacks.onStatus(event.content || "");
               }
               break;
             case "final":

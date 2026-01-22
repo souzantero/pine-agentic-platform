@@ -17,8 +17,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import type { ChatConfig, ModelOption } from "@/lib/types";
 
 // Mapeamento de nomes de provedores para labels amigaveis
@@ -111,36 +109,6 @@ function ModelField({
   );
 }
 
-// Componente para toggle de streaming
-function StreamModeField({
-  value,
-  onChange,
-}: {
-  value: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  return (
-    <>
-      <Separator />
-      <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
-          <Label htmlFor="stream-mode" className="text-sm font-medium">
-            Modo Streaming
-          </Label>
-          <p className="text-xs text-muted-foreground">
-            Exibe a resposta em tempo real
-          </p>
-        </div>
-        <Switch
-          id="stream-mode"
-          checked={value}
-          onCheckedChange={onChange}
-        />
-      </div>
-    </>
-  );
-}
-
 // Conteúdo compartilhado das configurações
 function SettingsContent({
   config,
@@ -161,11 +129,6 @@ function SettingsContent({
         value={config.model}
         onChange={(value) => onConfigChange("model", value)}
         availableModels={availableModels}
-      />
-
-      <StreamModeField
-        value={config.streamMode}
-        onChange={(value) => onConfigChange("streamMode", value)}
       />
     </div>
   );

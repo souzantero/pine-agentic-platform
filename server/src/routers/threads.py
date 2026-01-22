@@ -8,10 +8,11 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import col, select
 
 from src.agents.agent import build_agent, AgentContext
+from src.agents.tools import get_tool_display_name
 from src.auth import CurrentMembership, CurrentUser, check_permission
 from src.database import DatabaseSession, get_checkpointer
 from src.entities import Organization, OrganizationProvider, Permission, Provider, ProviderType, Thread
-from src.helpers import agent_messages_to_list, chunk_to_text, get_config
+from src.helpers import agent_messages_to_list, chunk_to_text, get_config, is_tool_call_chunk
 from src.schemas import CreateThreadRequest, RunRequest, ThreadMessagesResponse, ThreadResponse, UpdateThreadRequest
 
 router = APIRouter(prefix="/organizations/{organization_id}/threads", tags=["threads"])
@@ -270,70 +271,6 @@ async def get_thread_messages(
     return ThreadMessagesResponse(messages=agent_messages_to_list(state_messages))
 
 
-@router.post("/{thread_id}/runs/invoke", response_model=ThreadMessagesResponse)
-async def invoke_run(
-    organization_id: uuid.UUID,
-    thread_id: str,
-    payload: RunRequest,
-    current_user: CurrentUser,
-    membership: CurrentMembership,
-    db: DatabaseSession,
-):
-    """Executa e retorna todas as mensagens (requer THREADS_WRITE)."""
-    # Verifica permissao
-    if not check_permission(db, current_user.id, organization_id, Permission.THREADS_WRITE):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permissao THREADS_WRITE necessaria",
-        )
-
-    # Obtem api_key do provedor
-    provider, api_key = get_provider_api_key(db, organization_id, payload.config.provider)
-
-    # Busca dados da organizacao para o contexto
-    organization = db.get(Organization, organization_id)
-    if not organization:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Organizacao nao encontrada",
-        )
-
-    agent_context = AgentContext(
-        organization_id=str(organization_id),
-        organization_name=organization.name,
-        user_id=str(current_user.id),
-        user_name=current_user.name,
-    )
-
-    agent = build_agent(
-        db=db,
-        organization_id=organization_id,
-        provider=provider,
-        api_key=api_key,
-        config=payload.config,
-        checkpointer=get_checkpointer(),
-    )
-    messages = [m.to_agent() for m in payload.input.messages]
-    state_values = await agent.ainvoke(
-        {"messages": messages},
-        config=get_config(thread_id),
-        context=agent_context,
-    )
-    state_messages = state_values.get("messages", [])
-
-    # Atualiza thread com info da ultima mensagem
-    thread = db.get(Thread, uuid.UUID(thread_id))
-    if thread:
-        user_message = payload.input.messages[0].content if payload.input.messages else ""
-        preview = user_message[:100] + ("..." if len(user_message) > 100 else "")
-        thread.last_message_at = datetime.now(UTC)
-        thread.last_message_preview = preview
-        db.add(thread)
-        db.commit()
-
-    return ThreadMessagesResponse(messages=agent_messages_to_list(state_messages))
-
-
 @router.post("/{thread_id}/runs/stream")
 async def stream_run(
     organization_id: uuid.UUID,
@@ -368,6 +305,16 @@ async def stream_run(
         user_name=current_user.name,
     )
 
+    # Atualiza thread com info da ultima mensagem
+    thread = db.get(Thread, uuid.UUID(thread_id))
+    if thread:
+        user_message = payload.input.messages[0].content if payload.input.messages else ""
+        preview = user_message[:100] + ("..." if len(user_message) > 100 else "")
+        thread.last_message_at = datetime.now(UTC)
+        thread.last_message_preview = preview
+        db.add(thread)
+        db.commit()
+
     agent = build_agent(
         db=db,
         organization_id=organization_id,
@@ -386,6 +333,10 @@ async def stream_run(
     async def event_iterator():
         """Traduz eventos do LangGraph em mensagens SSE (chunk/final/done)."""
         try:
+            # Rastreia ferramentas ativas (contador para suportar multiplas ferramentas)
+            active_tools = 0
+            tools_ever_called = False
+
             # Primeiro: faz streaming dos chunks para o frontend
             async for event in agent.astream_events(
                 {"messages": messages},
@@ -393,10 +344,39 @@ async def stream_run(
                 context=agent_context,
             ):
                 event_name = event.get("event")
+
+                # Evento de inicio de ferramenta - envia status
+                if event_name == "on_tool_start":
+                    active_tools += 1
+                    tools_ever_called = True
+                    tool_name = event.get("name", "")
+                    display_name = get_tool_display_name(tool_name)
+                    yield sse_response_payload({"event": "status", "content": f"{display_name}..."})
+                    continue
+
+                # Evento de fim de ferramenta - limpa status quando todas terminarem
+                if event_name == "on_tool_end":
+                    active_tools = max(0, active_tools - 1)
+                    if active_tools == 0:
+                        yield sse_response_payload({"event": "status", "content": ""})
+                    continue
+
                 if event_name == "on_chat_model_stream":
                     chunk = event.get("data", {}).get("chunk")
-                    text = chunk_to_text(chunk) if chunk is not None else ""
+                    if chunk is None:
+                        continue
+                    # Ignora chunks de tool calls (JSON)
+                    if is_tool_call_chunk(chunk):
+                        continue
+                    # Se ferramentas estao ativas, nao streama (evita reasoning/thinking)
+                    if active_tools > 0:
+                        continue
+                    # Se ferramentas foram chamadas neste ciclo, filtra conteudo JSON
+                    text = chunk_to_text(chunk)
                     if not text:
+                        continue
+                    # Filtra chunks que parecem ser JSON (resultado de ferramentas vazando)
+                    if tools_ever_called and text.strip().startswith("{"):
                         continue
                     # Cada pedaco do modelo vira um evento chunk no SSE
                     yield sse_response_payload({"event": "chunk", "content": text})

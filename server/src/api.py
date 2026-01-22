@@ -13,9 +13,14 @@ async def lifespan(app: FastAPI):
     """Gerencia recursos no startup e shutdown."""
     # Startup
     await open_checkpointer()
-    yield
-    # Shutdown
-    await close_checkpointer()
+    try:
+        yield
+    finally:
+        # Shutdown
+        try:
+            await close_checkpointer()
+        except Exception:
+            pass  # Ignora erros de cancelamento no shutdown
 
 
 app = FastAPI(title="PineChat API", version="1.0.0", lifespan=lifespan)

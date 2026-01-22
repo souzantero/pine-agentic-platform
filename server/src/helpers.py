@@ -11,6 +11,18 @@ def get_config(thread_id: str):
     return {"configurable": {"thread_id": thread_id}}
 
 
+def is_tool_call_chunk(chunk: Any) -> bool:
+    """Verifica se o chunk é parte de uma chamada de ferramenta."""
+    if isinstance(chunk, AIMessageChunk):
+        # Se tem tool_call_chunks, é uma chamada de ferramenta
+        if hasattr(chunk, "tool_call_chunks") and chunk.tool_call_chunks:
+            return True
+        # Se tem tool_calls, também é
+        if hasattr(chunk, "tool_calls") and chunk.tool_calls:
+            return True
+    return False
+
+
 def chunk_to_text(chunk: Any) -> str:
     """Extrai string utilizável a partir de pedaços do modelo."""
     if isinstance(chunk, AIMessageChunk):

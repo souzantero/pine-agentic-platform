@@ -39,9 +39,13 @@ async def close_checkpointer():
     """Fecha conexao do checkpointer no shutdown."""
     global _checkpointer, _checkpointer_stack
     if _checkpointer_stack is not None:
-        await _checkpointer_stack.aclose()
-        _checkpointer_stack = None
-        _checkpointer = None
+        try:
+            await _checkpointer_stack.aclose()
+        except Exception:
+            pass  # Ignora erros de cancelamento
+        finally:
+            _checkpointer_stack = None
+            _checkpointer = None
 
 
 def get_checkpointer() -> AsyncPostgresSaver:

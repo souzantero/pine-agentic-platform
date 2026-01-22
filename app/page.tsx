@@ -6,7 +6,7 @@ import { useSession } from "@/lib/session";
 import { useThreads, useModels } from "@/lib/hooks";
 import { Header, Sidebar, MobileSidebar, MobileThreadsDrawer } from "@/components/layout";
 import { ChatArea, ChatSettings, MobileChatSettings } from "@/components/chat";
-import { invokeRun, streamRun } from "@/lib/api";
+import { streamRun } from "@/lib/api";
 import type { Message } from "@/lib/types";
 
 export default function Home() {
@@ -107,7 +107,7 @@ export default function Home() {
     [loadModelsForProvider, selectedId, updateConfigMultiple]
   );
 
-  const invokeRunForThread = useCallback(
+  const streamRunForThread = useCallback(
     async (threadId: string, messageContent: string) => {
       const thread = threads.find((t) => t.id === threadId);
       if (!thread || !currentMembership) return;
@@ -138,95 +138,51 @@ export default function Home() {
         },
       };
 
-      // Modo streaming
-      if (config.streamMode) {
-        const streamingMessageId = crypto.randomUUID();
-        let streamingContent = "";
+      const streamingMessageId = crypto.randomUUID();
+      const initialContent = "_Pensando..._";
+      let streamingContent = "";
 
-        // Cria mensagem vazia para ir preenchendo
-        const streamingMessage: Message = {
-          id: streamingMessageId,
-          role: "assistant",
-          content: "",
-          createdAt: new Date(),
-        };
-        addMessage(threadId, streamingMessage);
+      // Cria mensagem com placeholder inicial
+      const streamingMessage: Message = {
+        id: streamingMessageId,
+        role: "assistant",
+        content: initialContent,
+        createdAt: new Date(),
+      };
+      addMessage(threadId, streamingMessage);
 
-        await streamRun(
-          currentMembership.organizationId,
-          threadId,
-          payload,
-          {
-            onChunk: (content) => {
-              streamingContent += content;
-              updateMessage(threadId, streamingMessageId, streamingContent);
-            },
-            onFinal: (messages) => {
-              // Pega a ultima mensagem do tipo "ai" sem toolCalls
-              const aiMessages = messages.filter(
-                (m) => m.type === "ai" && (!m.toolCalls || m.toolCalls.length === 0)
-              );
-              const lastAiMessage = aiMessages[aiMessages.length - 1];
-              if (lastAiMessage) {
-                updateMessage(threadId, streamingMessageId, lastAiMessage.content);
-              }
-              setIsInvoking(false);
-            },
-            onError: (error) => {
-              updateMessage(threadId, streamingMessageId, `Erro: ${error}`);
-              setIsInvoking(false);
-            },
-          }
-        );
-        return;
-      }
-
-      // Modo invoke (padrao)
-      try {
-        const response = await invokeRun(
-          currentMembership.organizationId,
-          threadId,
-          payload
-        );
-
-        if (response.error) {
-          const errorMessage: Message = {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: `Erro ao processar mensagem: ${response.error}`,
-            createdAt: new Date(),
-          };
-          addMessage(threadId, errorMessage);
-          return;
+      await streamRun(
+        currentMembership.organizationId,
+        threadId,
+        payload,
+        {
+          onChunk: (content) => {
+            streamingContent += content;
+            updateMessage(threadId, streamingMessageId, streamingContent);
+          },
+          onStatus: (status) => {
+            // Mostra status apenas se ainda nao tem conteudo
+            if (!streamingContent && status) {
+              updateMessage(threadId, streamingMessageId, `_${status}_`);
+            }
+          },
+          onFinal: (messages) => {
+            // Pega a ultima mensagem do tipo "ai" sem toolCalls
+            const aiMessages = messages.filter(
+              (m) => m.type === "ai" && (!m.toolCalls || m.toolCalls.length === 0)
+            );
+            const lastAiMessage = aiMessages[aiMessages.length - 1];
+            if (lastAiMessage) {
+              updateMessage(threadId, streamingMessageId, lastAiMessage.content);
+            }
+            setIsInvoking(false);
+          },
+          onError: (error) => {
+            updateMessage(threadId, streamingMessageId, `Erro: ${error}`);
+            setIsInvoking(false);
+          },
         }
-
-        // Pega a ultima mensagem do tipo "ai" sem toolCalls da resposta
-        const aiMessages = response.data?.messages.filter(
-          (m) => m.type === "ai" && (!m.toolCalls || m.toolCalls.length === 0)
-        ) ?? [];
-        const lastAiMessage = aiMessages[aiMessages.length - 1];
-
-        if (lastAiMessage) {
-          const assistantMessage: Message = {
-            id: lastAiMessage.id || crypto.randomUUID(),
-            role: "assistant",
-            content: lastAiMessage.content,
-            createdAt: new Date(),
-          };
-          addMessage(threadId, assistantMessage);
-        }
-      } catch (error) {
-        console.error("Erro ao invocar execucao:", error);
-        const errorMessage: Message = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: "Erro ao conectar com o servidor. Tente novamente.",
-          createdAt: new Date(),
-        };
-        addMessage(threadId, errorMessage);
-      } finally {
-        setIsInvoking(false);
-      }
+      );
     },
     [threads, currentMembership, addMessage, updateMessage]
   );
@@ -246,7 +202,7 @@ export default function Home() {
             createdAt: new Date(),
           };
           addMessage(newThread.id, userMessage);
-          invokeRunForThread(newThread.id, content);
+          streamRunForThread(newThread.id, content);
         }
         return;
       }
@@ -259,9 +215,9 @@ export default function Home() {
       };
 
       addMessage(selectedId, userMessage);
-      invokeRunForThread(selectedId, content);
+      streamRunForThread(selectedId, content);
     },
-    [selectedId, createThread, addMessage, invokeRunForThread]
+    [selectedId, createThread, addMessage, streamRunForThread]
   );
 
   const isLoading = authLoading || threadsLoading;

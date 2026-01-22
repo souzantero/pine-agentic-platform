@@ -145,7 +145,7 @@ export interface ApiOrgConfigsResponse {
 }
 
 // ============================================
-// Agent Run (Invoke/Stream)
+// Agent Run (Stream)
 // ============================================
 
 export interface RunConfig {
@@ -153,7 +153,7 @@ export interface RunConfig {
   model: string;
 }
 
-export interface InvokePayload {
+export interface StreamPayload {
   input: {
     messages: { content: string }[];
   };
@@ -168,8 +168,4 @@ export interface AgentMessage {
   toolCalls?: unknown[];
   additionalKwargs?: Record<string, unknown>;
   createdAt?: string;
-}
-
-export interface InvokeResponse {
-  messages: AgentMessage[];
 }

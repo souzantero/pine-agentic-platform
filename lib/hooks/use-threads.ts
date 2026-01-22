@@ -33,7 +33,6 @@ interface UseThreadsReturn {
 const DEFAULT_CONFIG: ChatConfig = {
   provider: null,
   model: "",
-  streamMode: false,
 };
 
 // Obter config: primeiro tenta do storage da thread, senao usa default
