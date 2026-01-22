@@ -104,3 +104,107 @@ export async function getThreadMessages(
   const endpoint = `/organizations/${organizationId}/threads/${threadId}/state/messages`;
   return api.get<{ messages: AgentMessage[] }>(endpoint);
 }
+
+// Tipos para eventos de streaming
+interface StreamEvent {
+  event: "chunk" | "final" | "done" | "error";
+  content?: string;
+  messages?: AgentMessage[];
+  detail?: string;
+}
+
+// Callbacks para streaming
+export interface StreamCallbacks {
+  onChunk: (content: string) => void;
+  onFinal: (messages: AgentMessage[]) => void;
+  onError: (error: string) => void;
+}
+
+// Funcao para streaming de execucao
+export async function streamRun(
+  organizationId: string,
+  threadId: string,
+  payload: InvokePayload,
+  callbacks: StreamCallbacks
+): Promise<void> {
+  const token = getToken();
+  const endpoint = `${API_URL}/organizations/${organizationId}/threads/${threadId}/runs/stream`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      let errorMessage = "Erro ao conectar com o servidor";
+      try {
+        const errorData = JSON.parse(text);
+        errorMessage = errorData.detail || errorMessage;
+      } catch {
+        if (text) errorMessage = text;
+      }
+      callbacks.onError(errorMessage);
+      return;
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      callbacks.onError("Streaming não suportado");
+      return;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Processa linhas completas (SSE format: data: {...}\n\n)
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+
+        try {
+          const jsonStr = line.slice(6); // Remove "data: "
+          const event: StreamEvent = JSON.parse(jsonStr);
+
+          switch (event.event) {
+            case "chunk":
+              if (event.content) {
+                callbacks.onChunk(event.content);
+              }
+              break;
+            case "final":
+              if (event.messages) {
+                callbacks.onFinal(event.messages);
+              }
+              break;
+            case "error":
+              callbacks.onError(event.detail || "Erro desconhecido");
+              break;
+            case "done":
+              // Stream finalizado
+              break;
+          }
+        } catch {
+          // Ignora linhas que nao sao JSON valido
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Stream error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro ao conectar com o servidor";
+    callbacks.onError(errorMessage);
+  }
+}

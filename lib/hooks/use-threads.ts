@@ -22,6 +22,7 @@ interface UseThreadsReturn {
   selectThread: (id: string | null) => void;
   createThread: (title?: string) => Promise<ThreadWithMessages | null>;
   addMessage: (threadId: string, message: Message) => void;
+  updateMessage: (threadId: string, messageId: string, content: string) => void;
   updateThreadTitle: (threadId: string, title: string) => void;
   updateConfig: (threadId: string, key: string, value: unknown) => void;
   updateConfigMultiple: (threadId: string, updates: Partial<ChatConfig>) => void;
@@ -32,6 +33,7 @@ interface UseThreadsReturn {
 const DEFAULT_CONFIG: ChatConfig = {
   provider: null,
   model: "",
+  streamMode: false,
 };
 
 // Obter config: primeiro tenta do storage da thread, senao usa default
@@ -202,6 +204,22 @@ export function useThreads(): UseThreadsReturn {
     });
   }, []);
 
+  const updateMessage = useCallback((threadId: string, messageId: string, content: string) => {
+    setThreads((prev) =>
+      prev.map((thread) => {
+        if (thread.id === threadId) {
+          return {
+            ...thread,
+            messages: thread.messages.map((msg) =>
+              msg.id === messageId ? { ...msg, content } : msg
+            ),
+          };
+        }
+        return thread;
+      })
+    );
+  }, []);
+
   const updateThreadTitle = useCallback((threadId: string, title: string) => {
     setThreads((prev) =>
       prev.map((thread) => (thread.id === threadId ? { ...thread, title } : thread))
@@ -253,6 +271,7 @@ export function useThreads(): UseThreadsReturn {
     selectThread,
     createThread,
     addMessage,
+    updateMessage,
     updateThreadTitle,
     updateConfig,
     updateConfigMultiple,

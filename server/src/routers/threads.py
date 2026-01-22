@@ -3,21 +3,18 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any, Dict, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from sqlmodel import col, select
 
 from src.agents.agent import build_agent, AgentContext
 from src.auth import CurrentMembership, CurrentUser, check_permission
-from src.database import DatabaseSession, get_checkpoint_saver
+from src.database import DatabaseSession, get_checkpointer
 from src.entities import Organization, OrganizationProvider, Permission, Provider, ProviderType, Thread
 from src.helpers import agent_messages_to_list, chunk_to_text, get_config
 from src.schemas import CreateThreadRequest, RunRequest, ThreadMessagesResponse, ThreadResponse, UpdateThreadRequest
 
 router = APIRouter(prefix="/organizations/{organization_id}/threads", tags=["threads"])
-
-CheckpointSaver = Annotated[AsyncPostgresSaver, Depends(get_checkpoint_saver)]
 
 
 def get_provider_api_key(
@@ -252,7 +249,6 @@ async def get_thread_messages(
     thread_id: str,
     current_user: CurrentUser,
     db: DatabaseSession,
-    checkpointer: CheckpointSaver,
 ):
     """Retorna mensagens de uma thread (requer THREADS_READ)."""
     # Verifica permissao
@@ -263,6 +259,7 @@ async def get_thread_messages(
         )
 
     # Busca o checkpoint diretamente sem precisar criar um agente
+    checkpointer = get_checkpointer()
     config = get_config(thread_id)
     checkpoint_tuple = await checkpointer.aget_tuple(config)
 
@@ -281,7 +278,6 @@ async def invoke_run(
     current_user: CurrentUser,
     membership: CurrentMembership,
     db: DatabaseSession,
-    checkpointer: CheckpointSaver,
 ):
     """Executa e retorna todas as mensagens (requer THREADS_WRITE)."""
     # Verifica permissao
@@ -315,7 +311,7 @@ async def invoke_run(
         provider=provider,
         api_key=api_key,
         config=payload.config,
-        checkpointer=checkpointer,
+        checkpointer=get_checkpointer(),
     )
     messages = [m.to_agent() for m in payload.input.messages]
     state_values = await agent.ainvoke(
@@ -345,7 +341,6 @@ async def stream_run(
     payload: RunRequest,
     current_user: CurrentUser,
     db: DatabaseSession,
-    checkpointer: CheckpointSaver,
 ):
     """Executa com streaming SSE (requer THREADS_WRITE)."""
     # Verifica permissao
@@ -379,7 +374,7 @@ async def stream_run(
         provider=provider,
         api_key=api_key,
         config=payload.config,
-        checkpointer=checkpointer,
+        checkpointer=get_checkpointer(),
     )
     thread_config = get_config(thread_id)
     messages = [m.to_agent() for m in payload.input.messages]
@@ -404,7 +399,7 @@ async def stream_run(
                     if not text:
                         continue
                     # Cada pedaco do modelo vira um evento chunk no SSE
-                    yield sse_response_payload({"event": "chunk", "text": text})
+                    yield sse_response_payload({"event": "chunk", "content": text})
 
             # IMPORTANTE: O loop acima so termina quando astream_events() completar TOTALMENTE,
             # incluindo a persistencia no checkpointer. Nao damos break antecipado.

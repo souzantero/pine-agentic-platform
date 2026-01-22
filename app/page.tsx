@@ -6,7 +6,7 @@ import { useSession } from "@/lib/session";
 import { useThreads, useModels } from "@/lib/hooks";
 import { Header, Sidebar, MobileSidebar, MobileThreadsDrawer } from "@/components/layout";
 import { ChatArea, ChatSettings, MobileChatSettings } from "@/components/chat";
-import { invokeRun } from "@/lib/api";
+import { invokeRun, streamRun } from "@/lib/api";
 import type { Message } from "@/lib/types";
 
 export default function Home() {
@@ -22,6 +22,7 @@ export default function Home() {
     selectThread,
     createThread,
     addMessage,
+    updateMessage,
     updateConfig,
     updateConfigMultiple,
   } = useThreads();
@@ -127,19 +128,65 @@ export default function Home() {
 
       setIsInvoking(true);
 
+      const payload = {
+        input: {
+          messages: [{ content: messageContent }],
+        },
+        config: {
+          provider: config.provider,
+          model: config.model,
+        },
+      };
+
+      // Modo streaming
+      if (config.streamMode) {
+        const streamingMessageId = crypto.randomUUID();
+        let streamingContent = "";
+
+        // Cria mensagem vazia para ir preenchendo
+        const streamingMessage: Message = {
+          id: streamingMessageId,
+          role: "assistant",
+          content: "",
+          createdAt: new Date(),
+        };
+        addMessage(threadId, streamingMessage);
+
+        await streamRun(
+          currentMembership.organizationId,
+          threadId,
+          payload,
+          {
+            onChunk: (content) => {
+              streamingContent += content;
+              updateMessage(threadId, streamingMessageId, streamingContent);
+            },
+            onFinal: (messages) => {
+              // Pega a ultima mensagem do tipo "ai" sem toolCalls
+              const aiMessages = messages.filter(
+                (m) => m.type === "ai" && (!m.toolCalls || m.toolCalls.length === 0)
+              );
+              const lastAiMessage = aiMessages[aiMessages.length - 1];
+              if (lastAiMessage) {
+                updateMessage(threadId, streamingMessageId, lastAiMessage.content);
+              }
+              setIsInvoking(false);
+            },
+            onError: (error) => {
+              updateMessage(threadId, streamingMessageId, `Erro: ${error}`);
+              setIsInvoking(false);
+            },
+          }
+        );
+        return;
+      }
+
+      // Modo invoke (padrao)
       try {
         const response = await invokeRun(
           currentMembership.organizationId,
           threadId,
-          {
-            input: {
-              messages: [{ content: messageContent }],
-            },
-            config: {
-              provider: config.provider,
-              model: config.model,
-            },
-          }
+          payload
         );
 
         if (response.error) {
@@ -181,7 +228,7 @@ export default function Home() {
         setIsInvoking(false);
       }
     },
-    [threads, currentMembership, addMessage]
+    [threads, currentMembership, addMessage, updateMessage]
   );
 
   const handleSendMessage = useCallback(
