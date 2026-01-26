@@ -12,6 +12,7 @@ import {
   Building2,
   Plug,
   Wrench,
+  HardDrive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,11 @@ function SidebarContent({
 
   const handleToolsClick = () => {
     router.push("/settings/tools");
+    onItemClick?.();
+  };
+
+  const handleStorageClick = () => {
+    router.push("/settings/storage");
     onItemClick?.();
   };
 
@@ -278,6 +284,20 @@ function SidebarContent({
                     >
                       <Wrench className="h-4 w-4 shrink-0" />
                       <span>Ferramentas</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      onClick={handleStorageClick}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left",
+                        pathname === "/settings/storage"
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <HardDrive className="h-4 w-4 shrink-0" />
+                      <span>Armazenamento</span>
                     </button>
                   </li>
                 </>

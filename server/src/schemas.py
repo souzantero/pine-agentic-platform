@@ -296,9 +296,9 @@ class ThreadMessagesResponse(CamelCaseModel):
 
 
 class CreateProviderRequest(CamelCaseModel):
-    type: str  # LLM, WEB_SEARCH
-    provider: str  # OPENAI, TAVILY, etc.
-    api_key: str
+    type: str  # LLM, WEB_SEARCH, STORAGE, EMBEDDING
+    provider: str  # OPENAI, TAVILY, AWS_S3, etc.
+    credentials: dict  # Credenciais do provedor (apiKey, accessKeyId, secretAccessKey, etc)
 
 
 class ProviderResponse(CamelCaseModel):

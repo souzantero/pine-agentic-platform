@@ -20,7 +20,7 @@ export type Permission =
 export type RoleScope = "PLATFORM" | "ORGANIZATION";
 
 // Tipos de provedores
-export type ProviderType = "LLM" | "WEB_SEARCH";
+export type ProviderType = "LLM" | "WEB_SEARCH" | "STORAGE" | "EMBEDDING";
 
 // Provedores disponíveis
 export type Provider =
@@ -28,7 +28,8 @@ export type Provider =
   | "OPENROUTER"
   | "ANTHROPIC"
   | "GOOGLE"
-  | "TAVILY";
+  | "TAVILY"
+  | "AWS_S3";
 
 // Informações de UI dos provedores
 export interface ProviderInfo {
@@ -64,6 +65,22 @@ export const PROVIDER_TYPES: ProviderTypeInfo[] = [
       { value: "TAVILY", label: "Tavily", placeholder: "tvly-..." },
     ],
   },
+  {
+    value: "STORAGE",
+    label: "Armazenamento",
+    description: "Provedores de armazenamento de arquivos",
+    providers: [
+      { value: "AWS_S3", label: "Amazon S3", placeholder: "Secret Access Key" },
+    ],
+  },
+  {
+    value: "EMBEDDING",
+    label: "Embeddings",
+    description: "Provedores de vetorização de texto",
+    providers: [
+      { value: "OPENAI", label: "OpenAI Embeddings", placeholder: "sk-..." },
+    ],
+  },
 ];
 
 // Helper para obter provedores de um tipo específico
@@ -73,10 +90,10 @@ export function getProvidersForType(type: ProviderType): ProviderInfo[] {
 }
 
 // Tipos de configuração da organização
-export type ConfigType = "TOOL";
+export type ConfigType = "TOOL" | "FEATURE";
 
 // Chaves de configuração
-export type ConfigKey = "WEB_SEARCH" | "WEB_FETCH";
+export type ConfigKey = "WEB_SEARCH" | "WEB_FETCH" | "STORAGE";
 
 // Informações de UI das ferramentas
 export interface ToolInfo {

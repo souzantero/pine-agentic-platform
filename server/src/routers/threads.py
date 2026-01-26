@@ -54,7 +54,7 @@ def get_provider_api_key(
             detail=f"Provedor {provider_str} nao configurado para esta organizacao",
         )
 
-    return provider, org_provider.api_key
+    return provider, org_provider.credentials.get("apiKey", "")
 
 
 @router.get("", response_model=List[ThreadResponse])

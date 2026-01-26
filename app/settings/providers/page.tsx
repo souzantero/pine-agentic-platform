@@ -34,6 +34,8 @@ interface ProviderFormState {
   saving: boolean;
   error: string | null;
   success: boolean;
+  // Campos extras para provedores que precisam de config adicional (ex: S3)
+  extraConfig: Record<string, string>;
 }
 
 const initialFormState: ProviderFormState = {
@@ -43,6 +45,19 @@ const initialFormState: ProviderFormState = {
   saving: false,
   error: null,
   success: false,
+  extraConfig: {},
+};
+
+// Campos extras necessarios para cada provedor (apenas credenciais)
+const PROVIDER_EXTRA_FIELDS: Record<Provider, { key: string; label: string; placeholder: string }[]> = {
+  AWS_S3: [
+    { key: "accessKeyId", label: "Access Key ID", placeholder: "AKIA..." },
+  ],
+  OPENAI: [],
+  OPENROUTER: [],
+  ANTHROPIC: [],
+  GOOGLE: [],
+  TAVILY: [],
 };
 
 export default function ProvidersPage() {
@@ -50,7 +65,6 @@ export default function ProvidersPage() {
   const { isLoading: authLoading, hasPermission } = useSession();
 
   const {
-    providers,
     isLoading: providersLoading,
     addProvider,
     removeProvider,
@@ -63,6 +77,8 @@ export default function ProvidersPage() {
   >({
     LLM: { ...initialFormState },
     WEB_SEARCH: { ...initialFormState },
+    STORAGE: { ...initialFormState },
+    EMBEDDING: { ...initialFormState },
   });
 
   const canManage = hasPermission("ORGANIZATION_MANAGE");
@@ -94,9 +110,30 @@ export default function ProvidersPage() {
       return;
     }
 
+    // Valida campos extras obrigatorios
+    const extraFields = PROVIDER_EXTRA_FIELDS[state.selectedProvider] || [];
+    for (const field of extraFields) {
+      if (!state.extraConfig[field.key]?.trim()) {
+        updateFormState(type, {
+          error: `O campo "${field.label}" é obrigatório`,
+        });
+        return;
+      }
+    }
+
     updateFormState(type, { error: null, success: false, saving: true });
 
-    const result = await addProvider(type, state.selectedProvider, state.apiKey);
+    // Monta objeto credentials combinando apiKey + campos extras
+    const credentials: Record<string, string> = {
+      apiKey: state.apiKey.trim(),
+      ...state.extraConfig,
+    };
+
+    const result = await addProvider(
+      type,
+      state.selectedProvider,
+      credentials
+    );
 
     if (result.error) {
       updateFormState(type, { error: result.error, saving: false });
@@ -107,6 +144,7 @@ export default function ProvidersPage() {
         apiKey: "",
         showApiKey: false,
         saving: false,
+        extraConfig: {},
       });
       setTimeout(() => updateFormState(type, { success: false }), 3000);
     }
@@ -152,7 +190,7 @@ export default function ProvidersPage() {
         </div>
 
         <Tabs defaultValue="LLM" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             {PROVIDER_TYPES.map((pt) => (
               <TabsTrigger key={pt.value} value={pt.value}>
                 {pt.label}
@@ -187,12 +225,12 @@ export default function ProvidersPage() {
                                 key={provider.id}
                                 className="flex items-center justify-between p-3 bg-muted/50 rounded-md"
                               >
-                                <div className="flex flex-col">
+                                <div className="flex flex-col gap-1">
                                   <span className="font-medium">
                                     {providerInfo?.label || provider.provider}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
-                                    API Key configurada
+                                    Credenciais configuradas
                                   </span>
                                 </div>
                                 <Button
@@ -239,6 +277,7 @@ export default function ProvidersPage() {
                             onValueChange={(value) =>
                               updateFormState(providerType.value, {
                                 selectedProvider: value as Provider,
+                                extraConfig: {},
                               })
                             }
                           >
@@ -258,7 +297,37 @@ export default function ProvidersPage() {
                           </Select>
                         </div>
 
+                        {/* Campos extras para provedores que precisam de config adicional */}
+                        {state.selectedProvider &&
+                          PROVIDER_EXTRA_FIELDS[state.selectedProvider]?.map(
+                            (field) => (
+                              <div key={field.key} className="space-y-2">
+                                <Label htmlFor={`${providerType.value}-${field.key}`}>
+                                  {field.label}
+                                </Label>
+                                <Input
+                                  id={`${providerType.value}-${field.key}`}
+                                  placeholder={field.placeholder}
+                                  value={state.extraConfig[field.key] || ""}
+                                  onChange={(e) =>
+                                    updateFormState(providerType.value, {
+                                      extraConfig: {
+                                        ...state.extraConfig,
+                                        [field.key]: e.target.value,
+                                      },
+                                    })
+                                  }
+                                />
+                              </div>
+                            )
+                          )}
+
                         <div className="space-y-2">
+                          <Label>
+                            {state.selectedProvider === "AWS_S3"
+                              ? "Secret Access Key"
+                              : "API Key"}
+                          </Label>
                           <div className="relative">
                             <Input
                               type={state.showApiKey ? "text" : "password"}

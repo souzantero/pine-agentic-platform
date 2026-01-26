@@ -65,7 +65,7 @@ export default function ToolsPage() {
     getConfig,
   } = useConfigs("TOOL");
 
-  const { providers, getProvidersByType } = useProviders();
+  const { getProvidersByType } = useProviders();
   const { models } = useModels();
 
   const [formStates, setFormStates] = useState<Record<ConfigKey, ToolFormState>>({

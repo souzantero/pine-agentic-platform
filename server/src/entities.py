@@ -51,6 +51,8 @@ class ProviderType(str, Enum):
 
     LLM = "LLM"
     WEB_SEARCH = "WEB_SEARCH"
+    STORAGE = "STORAGE"
+    EMBEDDING = "EMBEDDING"
 
 
 class Provider(str, Enum):
@@ -63,12 +65,15 @@ class Provider(str, Enum):
     GOOGLE = "GOOGLE"
     # Web Search
     TAVILY = "TAVILY"
+    # Storage
+    AWS_S3 = "AWS_S3"
 
 
 class ConfigType(str, Enum):
     """Tipos de configuracao da organizacao"""
 
     TOOL = "TOOL"
+    FEATURE = "FEATURE"
 
 
 class ConfigKey(str, Enum):
@@ -76,6 +81,7 @@ class ConfigKey(str, Enum):
 
     WEB_SEARCH = "WEB_SEARCH"
     WEB_FETCH = "WEB_FETCH"
+    STORAGE = "STORAGE"
 
 
 # =============================================================================
@@ -124,7 +130,7 @@ class Organization(SQLModel, table=True):
 
 
 class OrganizationProvider(SQLModel, table=True):
-    """Configuracoes de provedores por organizacao"""
+    """Credenciais de provedores por organizacao"""
 
     __tablename__ = "organization_providers"
     __table_args__ = (UniqueConstraint("organization_id", "type", "provider"),)
@@ -133,7 +139,7 @@ class OrganizationProvider(SQLModel, table=True):
     organization_id: uuid.UUID = Field(foreign_key="organizations.id", index=True)
     type: ProviderType
     provider: Provider
-    api_key: str
+    credentials: dict = Field(default_factory=dict, sa_type=JSON)  # Credenciais do provedor (api_key, access_key, etc)
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=get_now)
     updated_at: datetime = Field(default_factory=get_now, sa_column_kwargs={"onupdate": get_now})

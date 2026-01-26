@@ -89,7 +89,7 @@ def get_provider_api_key(
         OrganizationProvider.is_active == True,
     )
     org_provider = db.exec(statement).first()
-    return org_provider.api_key if org_provider else None
+    return org_provider.credentials.get("apiKey", "") if org_provider else None
 
 
 def get_model(

@@ -19,6 +19,8 @@ router = APIRouter(prefix="/organizations/{organization_id}/providers", tags=["p
 PROVIDERS_BY_TYPE = {
     ProviderType.LLM: [Provider.OPENAI, Provider.OPENROUTER, Provider.ANTHROPIC, Provider.GOOGLE],
     ProviderType.WEB_SEARCH: [Provider.TAVILY],
+    ProviderType.STORAGE: [Provider.AWS_S3],
+    ProviderType.EMBEDDING: [Provider.OPENAI],
 }
 
 
@@ -117,11 +119,11 @@ def create_or_update_provider(
     provider_type = validate_provider_type(payload.type)
     provider_enum = validate_provider(payload.provider, provider_type)
 
-    # Valida API key
-    if not payload.api_key or not payload.api_key.strip():
+    # Valida credentials
+    if not payload.credentials:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="API Key e obrigatoria",
+            detail="Credenciais sao obrigatorias",
         )
 
     # Busca provedor existente (upsert por organization_id + type + provider)
@@ -133,8 +135,8 @@ def create_or_update_provider(
     existing = db.exec(statement).first()
 
     if existing:
-        # Atualiza
-        existing.api_key = payload.api_key.strip()
+        # Atualiza - faz merge das credentials
+        existing.credentials = {**existing.credentials, **payload.credentials}
         existing.is_active = True
         db.add(existing)
         db.commit()
@@ -146,7 +148,7 @@ def create_or_update_provider(
             organization_id=organization_id,
             type=provider_type,
             provider=provider_enum,
-            api_key=payload.api_key.strip(),
+            credentials=payload.credentials,
             is_active=True,
         )
         db.add(provider)

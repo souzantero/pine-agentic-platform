@@ -18,7 +18,7 @@ interface UseProvidersReturn {
   addProvider: (
     type: ProviderType,
     provider: Provider,
-    apiKey: string
+    credentials: Record<string, string>
   ) => Promise<MutationResult>;
   removeProvider: (id: string) => Promise<MutationResult>;
   refresh: () => Promise<void>;
@@ -69,7 +69,7 @@ export function useProviders(): UseProvidersReturn {
     async (
       type: ProviderType,
       provider: Provider,
-      apiKey: string
+      credentials: Record<string, string>
     ): Promise<MutationResult> => {
       if (!orgId) {
         return { error: "Organização não selecionada" };
@@ -78,7 +78,7 @@ export function useProviders(): UseProvidersReturn {
       try {
         const response = await api.post<ProviderConfig>(
           `/organizations/${orgId}/providers`,
-          { type, provider, apiKey }
+          { type, provider, credentials }
         );
 
         if (response.error) {
