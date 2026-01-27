@@ -114,6 +114,8 @@ class DocumentProcessor:
         embedding_settings = knowledge_config.config.get("embedding", {})
         provider_str = embedding_settings.get("provider", "OPENAI")
         model = embedding_settings.get("model", "text-embedding-ada-002")
+        chunk_size = embedding_settings.get("chunkSize", 1000)
+        chunk_overlap = embedding_settings.get("chunkOverlap", 200)
 
         # Converte string para enum
         try:
@@ -137,7 +139,12 @@ class DocumentProcessor:
         if not api_key:
             raise DocumentProcessorError("API key de embedding nao configurada")
 
-        self._embedding_service = EmbeddingService(api_key=api_key, model=model)
+        self._embedding_service = EmbeddingService(
+            api_key=api_key,
+            model=model,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
         return self._embedding_service
 
     def process_document(self, document: Document) -> None:

@@ -26,20 +26,30 @@ import { Brain, Check, AlertCircle } from "lucide-react";
 
 interface KnowledgeConfig {
   storage?: {
+    provider?: string;
     bucket?: string;
     region?: string;
   };
   embedding?: {
     provider?: string;
     model?: string;
+    chunkSize?: number;
+    chunkOverlap?: number;
   };
 }
 
-const EMBEDDING_MODELS = [
-  { value: "text-embedding-ada-002", label: "text-embedding-ada-002 (OpenAI)" },
-  { value: "text-embedding-3-small", label: "text-embedding-3-small (OpenAI)" },
-  { value: "text-embedding-3-large", label: "text-embedding-3-large (OpenAI)" },
-];
+// Modelos de embedding por provider
+const EMBEDDING_MODELS: Record<string, { value: string; label: string }[]> = {
+  OPENAI: [
+    { value: "text-embedding-ada-002", label: "text-embedding-ada-002" },
+    { value: "text-embedding-3-small", label: "text-embedding-3-small" },
+    { value: "text-embedding-3-large", label: "text-embedding-3-large" },
+  ],
+};
+
+// Valores padrão
+const DEFAULT_CHUNK_SIZE = 1000;
+const DEFAULT_CHUNK_OVERLAP = 200;
 
 export default function KnowledgePage() {
   const router = useRouter();
@@ -53,9 +63,13 @@ export default function KnowledgePage() {
   } = useConfigs("FEATURE");
 
   // Estados locais do form, null significa "usar valor da config"
+  const [localStorageProvider, setLocalStorageProvider] = useState<string | null>(null);
   const [localBucket, setLocalBucket] = useState<string | null>(null);
   const [localRegion, setLocalRegion] = useState<string | null>(null);
+  const [localEmbeddingProvider, setLocalEmbeddingProvider] = useState<string | null>(null);
   const [localEmbeddingModel, setLocalEmbeddingModel] = useState<string | null>(null);
+  const [localChunkSize, setLocalChunkSize] = useState<number | null>(null);
+  const [localChunkOverlap, setLocalChunkOverlap] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -63,12 +77,8 @@ export default function KnowledgePage() {
   const canManage = hasPermission("ORGANIZATION_MANAGE");
 
   // Busca os providers configurados
-  const s3Provider = getProvidersByType("STORAGE").find(
-    (p) => p.provider === "AWS_S3"
-  );
-  const embeddingProvider = getProvidersByType("EMBEDDING").find(
-    (p) => p.provider === "OPENAI"
-  );
+  const storageProviders = getProvidersByType("STORAGE");
+  const embeddingProviders = getProvidersByType("EMBEDDING");
 
   // Busca a config de conhecimento existente
   const knowledgeConfig = getConfig("FEATURE", "KNOWLEDGE");
@@ -78,9 +88,19 @@ export default function KnowledgePage() {
     return (knowledgeConfig?.config as KnowledgeConfig) || {};
   }, [knowledgeConfig]);
 
+  // Storage values
+  const storageProvider = localStorageProvider ?? configData.storage?.provider ?? "";
   const bucket = localBucket ?? configData.storage?.bucket ?? "";
   const region = localRegion ?? configData.storage?.region ?? "";
-  const embeddingModel = localEmbeddingModel ?? configData.embedding?.model ?? "text-embedding-ada-002";
+
+  // Embedding values
+  const embeddingProvider = localEmbeddingProvider ?? configData.embedding?.provider ?? "";
+  const embeddingModel = localEmbeddingModel ?? configData.embedding?.model ?? "";
+  const chunkSize = localChunkSize ?? configData.embedding?.chunkSize ?? DEFAULT_CHUNK_SIZE;
+  const chunkOverlap = localChunkOverlap ?? configData.embedding?.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP;
+
+  // Modelos disponíveis para o provider selecionado
+  const availableModels = embeddingProvider ? EMBEDDING_MODELS[embeddingProvider] || [] : [];
 
   // Redirect se sem permissão
   useEffect(() => {
@@ -89,7 +109,21 @@ export default function KnowledgePage() {
     }
   }, [authLoading, canManage, router]);
 
+  // Quando muda o provider de embedding, limpa o modelo se não for compatível
+  useEffect(() => {
+    if (embeddingProvider && availableModels.length > 0) {
+      const modelExists = availableModels.some(m => m.value === embeddingModel);
+      if (!modelExists) {
+        setLocalEmbeddingModel(availableModels[0].value);
+      }
+    }
+  }, [embeddingProvider, availableModels, embeddingModel]);
+
   const handleSave = async () => {
+    if (!storageProvider) {
+      setError("Selecione um provedor de armazenamento");
+      return;
+    }
     if (!bucket.trim()) {
       setError("O bucket é obrigatório");
       return;
@@ -98,14 +132,20 @@ export default function KnowledgePage() {
       setError("A região é obrigatória");
       return;
     }
-
-    if (!s3Provider) {
-      setError("Configure primeiro as credenciais do S3 na página de Provedores");
+    if (!embeddingProvider) {
+      setError("Selecione um provedor de embedding");
       return;
     }
-
-    if (!embeddingProvider) {
-      setError("Configure primeiro as credenciais de Embedding na página de Provedores");
+    if (!embeddingModel) {
+      setError("Selecione um modelo de embedding");
+      return;
+    }
+    if (chunkSize < 100 || chunkSize > 10000) {
+      setError("O tamanho do chunk deve estar entre 100 e 10000");
+      return;
+    }
+    if (chunkOverlap < 0 || chunkOverlap >= chunkSize) {
+      setError("O overlap deve ser maior ou igual a 0 e menor que o tamanho do chunk");
       return;
     }
 
@@ -114,12 +154,15 @@ export default function KnowledgePage() {
 
     const config: KnowledgeConfig = {
       storage: {
+        provider: storageProvider,
         bucket: bucket.trim(),
         region: region.trim(),
       },
       embedding: {
-        provider: "OPENAI",
+        provider: embeddingProvider,
         model: embeddingModel,
+        chunkSize,
+        chunkOverlap,
       },
     };
 
@@ -133,9 +176,13 @@ export default function KnowledgePage() {
     } else {
       setSuccess(true);
       // Limpa estados locais para usar valores da config atualizada
+      setLocalStorageProvider(null);
       setLocalBucket(null);
       setLocalRegion(null);
+      setLocalEmbeddingProvider(null);
       setLocalEmbeddingModel(null);
+      setLocalChunkSize(null);
+      setLocalChunkOverlap(null);
       setTimeout(() => setSuccess(false), 3000);
     }
 
@@ -148,9 +195,9 @@ export default function KnowledgePage() {
     return null;
   }
 
-  const hasS3Credentials = !!s3Provider;
-  const hasEmbeddingCredentials = !!embeddingProvider;
-  const canSave = hasS3Credentials && hasEmbeddingCredentials;
+  const hasStorageProviders = storageProviders.length > 0;
+  const hasEmbeddingProviders = embeddingProviders.length > 0;
+  const canSave = hasStorageProviders && hasEmbeddingProviders && storageProvider && embeddingProvider;
 
   return (
     <AppLayout>
@@ -169,19 +216,19 @@ export default function KnowledgePage() {
 
         <div className="space-y-6">
           {/* Alertas de credenciais faltando */}
-          {(!hasS3Credentials || !hasEmbeddingCredentials) && (
+          {(!hasStorageProviders || !hasEmbeddingProviders) && (
             <div className="p-4 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-md flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                  Credenciais necessárias
+                  Provedores necessários
                 </p>
                 <ul className="text-sm text-amber-700 dark:text-amber-300 mt-1 list-disc list-inside">
-                  {!hasS3Credentials && (
-                    <li>AWS S3 (Armazenamento)</li>
+                  {!hasStorageProviders && (
+                    <li>Armazenamento (ex: AWS S3)</li>
                   )}
-                  {!hasEmbeddingCredentials && (
-                    <li>OpenAI (Embeddings)</li>
+                  {!hasEmbeddingProviders && (
+                    <li>Embeddings (ex: OpenAI)</li>
                   )}
                 </ul>
                 <button
@@ -217,32 +264,56 @@ export default function KnowledgePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="bucket">Bucket S3</Label>
-                <Input
-                  id="bucket"
-                  placeholder="meu-bucket"
-                  value={bucket}
-                  onChange={(e) => setLocalBucket(e.target.value)}
-                  disabled={!hasS3Credentials || saving}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Nome do bucket S3 onde os documentos serão armazenados
-                </p>
+                <Label htmlFor="storage-provider">Provedor</Label>
+                <Select
+                  value={storageProvider}
+                  onValueChange={setLocalStorageProvider}
+                  disabled={!hasStorageProviders || saving}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um provedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {storageProviders.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.provider}>
+                        {provider.provider === "AWS_S3" ? "Amazon S3" : provider.provider}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="region">Região AWS</Label>
-                <Input
-                  id="region"
-                  placeholder="us-east-1"
-                  value={region}
-                  onChange={(e) => setLocalRegion(e.target.value)}
-                  disabled={!hasS3Credentials || saving}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Região AWS onde o bucket está localizado
-                </p>
-              </div>
+              {storageProvider === "AWS_S3" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="bucket">Bucket S3</Label>
+                    <Input
+                      id="bucket"
+                      placeholder="meu-bucket"
+                      value={bucket}
+                      onChange={(e) => setLocalBucket(e.target.value)}
+                      disabled={saving}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Nome do bucket S3 onde os documentos serão armazenados
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="region">Região AWS</Label>
+                    <Input
+                      id="region"
+                      placeholder="us-east-1"
+                      value={region}
+                      onChange={(e) => setLocalRegion(e.target.value)}
+                      disabled={saving}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Região AWS onde o bucket está localizado
+                    </p>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -256,33 +327,89 @@ export default function KnowledgePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="embedding-model">Modelo de Embedding</Label>
+                <Label htmlFor="embedding-provider">Provedor</Label>
                 <Select
-                  value={embeddingModel}
-                  onValueChange={setLocalEmbeddingModel}
-                  disabled={!hasEmbeddingCredentials || saving}
+                  value={embeddingProvider}
+                  onValueChange={setLocalEmbeddingProvider}
+                  disabled={!hasEmbeddingProviders || saving}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um modelo" />
+                    <SelectValue placeholder="Selecione um provedor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EMBEDDING_MODELS.map((model) => (
-                      <SelectItem key={model.value} value={model.value}>
-                        {model.label}
+                    {embeddingProviders.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.provider}>
+                        {provider.provider === "OPENAI" ? "OpenAI" : provider.provider}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Modelo usado para converter texto em vetores para busca semântica
-                </p>
+              </div>
+
+              {embeddingProvider && availableModels.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="embedding-model">Modelo de Embedding</Label>
+                  <Select
+                    value={embeddingModel}
+                    onValueChange={setLocalEmbeddingModel}
+                    disabled={saving}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um modelo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableModels.map((model) => (
+                        <SelectItem key={model.value} value={model.value}>
+                          {model.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Modelo usado para converter texto em vetores para busca semântica
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div className="space-y-2">
+                  <Label htmlFor="chunk-size">Tamanho do Chunk</Label>
+                  <Input
+                    id="chunk-size"
+                    type="number"
+                    min={100}
+                    max={10000}
+                    value={chunkSize}
+                    onChange={(e) => setLocalChunkSize(parseInt(e.target.value) || DEFAULT_CHUNK_SIZE)}
+                    disabled={saving}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Caracteres por chunk (100-10000)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="chunk-overlap">Overlap</Label>
+                  <Input
+                    id="chunk-overlap"
+                    type="number"
+                    min={0}
+                    max={chunkSize - 1}
+                    value={chunkOverlap}
+                    onChange={(e) => setLocalChunkOverlap(parseInt(e.target.value) || 0)}
+                    disabled={saving}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Sobreposição entre chunks
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Button
             onClick={handleSave}
-            disabled={!canSave || saving || (!bucket && !region)}
+            disabled={!canSave || saving}
             className="w-full"
           >
             {saving ? "Salvando..." : "Salvar Configurações"}
