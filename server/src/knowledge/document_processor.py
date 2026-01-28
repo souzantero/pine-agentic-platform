@@ -17,7 +17,7 @@ from src.database.entities import (
     ConfigKey,
 )
 from src.core.storage import S3Service
-from src.core.embedding import EmbeddingService
+from src.core.embedding import EmbeddingService, get_embedding_config
 
 logger = logging.getLogger(__name__)
 
@@ -99,52 +99,11 @@ class DocumentProcessor:
         if self._embedding_service:
             return self._embedding_service
 
-        # Busca config de conhecimento para obter provider/model de embedding
-        config_statement = select(OrganizationConfig).where(
-            OrganizationConfig.organization_id == self.organization_id,
-            OrganizationConfig.type == ConfigType.FEATURE,
-            OrganizationConfig.key == ConfigKey.KNOWLEDGE,
-            OrganizationConfig.is_enabled == True,
-        )
-        knowledge_config = self.db.exec(config_statement).first()
+        config = get_embedding_config(self.db, self.organization_id)
+        if not config:
+            raise DocumentProcessorError("Configuracao de embedding nao encontrada")
 
-        if not knowledge_config:
-            raise DocumentProcessorError("Configuracao de conhecimento nao encontrada")
-
-        embedding_settings = knowledge_config.config.get("embedding", {})
-        provider_str = embedding_settings.get("provider", "OPENAI")
-        model = embedding_settings.get("model", "text-embedding-ada-002")
-        chunk_size = embedding_settings.get("chunkSize", 1000)
-        chunk_overlap = embedding_settings.get("chunkOverlap", 200)
-
-        # Converte string para enum
-        try:
-            provider_enum = Provider(provider_str)
-        except ValueError:
-            raise DocumentProcessorError(f"Provider de embedding invalido: {provider_str}")
-
-        # Busca credenciais do provider de embedding
-        statement = select(OrganizationProvider).where(
-            OrganizationProvider.organization_id == self.organization_id,
-            OrganizationProvider.type == ProviderType.EMBEDDING,
-            OrganizationProvider.provider == provider_enum,
-            OrganizationProvider.is_active == True,
-        )
-        provider = self.db.exec(statement).first()
-
-        if not provider:
-            raise DocumentProcessorError(f"Provider de embedding {provider_str} nao configurado")
-
-        api_key = provider.credentials.get("apiKey")
-        if not api_key:
-            raise DocumentProcessorError("API key de embedding nao configurada")
-
-        self._embedding_service = EmbeddingService(
-            api_key=api_key,
-            model=model,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-        )
+        self._embedding_service = EmbeddingService(config)
         return self._embedding_service
 
     def process_document(self, document: Document) -> None:

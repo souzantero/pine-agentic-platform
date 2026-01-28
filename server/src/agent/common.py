@@ -10,6 +10,7 @@ from src.core.env import openrouter_base_url
 TOOL_DISPLAY_NAMES = {
     "web_search": "Pesquisando na web",
     "web_fetch": "Lendo página",
+    "knowledge_search": "Buscando na base de conhecimento",
 }
 
 

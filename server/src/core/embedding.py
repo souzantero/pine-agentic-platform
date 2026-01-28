@@ -2,13 +2,129 @@
 
 import io
 import logging
+import uuid
 from dataclasses import dataclass
 
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pypdf import PdfReader
+from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class EmbeddingConfig:
+    """Configuracao de embedding para uma organizacao."""
+
+    api_key: str
+    model: str
+    chunk_size: int
+    chunk_overlap: int
+
+
+def get_embedding_config(db: Session, organization_id: uuid.UUID) -> EmbeddingConfig | None:
+    """Obtem a configuracao de embedding para uma organizacao.
+
+    Args:
+        db: Sessao do banco de dados
+        organization_id: ID da organizacao
+
+    Returns:
+        EmbeddingConfig ou None se nao configurado
+    """
+    from src.database.entities import (
+        OrganizationConfig,
+        OrganizationProvider,
+        ConfigType,
+        ConfigKey,
+        ProviderType,
+        Provider,
+    )
+
+    # Busca config de conhecimento
+    config_statement = select(OrganizationConfig).where(
+        OrganizationConfig.organization_id == organization_id,
+        OrganizationConfig.type == ConfigType.FEATURE,
+        OrganizationConfig.key == ConfigKey.KNOWLEDGE,
+        OrganizationConfig.is_enabled == True,
+    )
+    knowledge_config = db.exec(config_statement).first()
+
+    if not knowledge_config:
+        logger.warning(f"Conhecimento nao configurado para organizacao {organization_id}")
+        return None
+
+    embedding_settings = knowledge_config.config.get("embedding", {})
+    provider_str = embedding_settings.get("provider", "OPENAI")
+    model = embedding_settings.get("model", "text-embedding-ada-002")
+    chunk_size = embedding_settings.get("chunkSize", 1000)
+    chunk_overlap = embedding_settings.get("chunkOverlap", 200)
+
+    # Converte string para enum
+    try:
+        provider_enum = Provider(provider_str)
+    except ValueError:
+        logger.warning(f"Provider de embedding invalido: {provider_str}")
+        return None
+
+    # Busca credenciais do provider
+    statement = select(OrganizationProvider).where(
+        OrganizationProvider.organization_id == organization_id,
+        OrganizationProvider.type == ProviderType.EMBEDDING,
+        OrganizationProvider.provider == provider_enum,
+        OrganizationProvider.is_active == True,
+    )
+    provider = db.exec(statement).first()
+
+    if not provider:
+        logger.warning(f"Provider de embedding {provider_str} nao configurado")
+        return None
+
+    api_key = provider.credentials.get("apiKey")
+    if not api_key:
+        logger.warning("API key de embedding nao encontrada")
+        return None
+
+    return EmbeddingConfig(
+        api_key=api_key,
+        model=model,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
+
+
+def create_embeddings_client(config: EmbeddingConfig) -> OpenAIEmbeddings:
+    """Cria um cliente de embeddings a partir da configuracao.
+
+    Args:
+        config: Configuracao de embedding
+
+    Returns:
+        Cliente OpenAIEmbeddings configurado
+    """
+    return OpenAIEmbeddings(
+        openai_api_key=config.api_key,
+        model=config.model,
+    )
+
+
+def get_embeddings_client(db: Session, organization_id: uuid.UUID) -> OpenAIEmbeddings | None:
+    """Factory que obtem um cliente de embeddings configurado para uma organizacao.
+
+    Combina get_embedding_config e create_embeddings_client em uma unica chamada.
+
+    Args:
+        db: Sessao do banco de dados
+        organization_id: ID da organizacao
+
+    Returns:
+        Cliente OpenAIEmbeddings ou None se nao configurado
+    """
+    config = get_embedding_config(db, organization_id)
+    if not config:
+        return None
+    return create_embeddings_client(config)
 
 
 @dataclass
@@ -24,32 +140,36 @@ class ChunkWithEmbedding:
 class EmbeddingService:
     """Servico para extracao de texto e geracao de embeddings."""
 
-    def __init__(
-        self,
-        api_key: str,
-        model: str = "text-embedding-ada-002",
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
-    ):
+    def __init__(self, config: EmbeddingConfig):
         """Inicializa o servico de embedding.
 
         Args:
-            api_key: API key da OpenAI
-            model: Modelo de embedding (default: text-embedding-ada-002)
-            chunk_size: Tamanho maximo de cada chunk em caracteres
-            chunk_overlap: Sobreposicao entre chunks para manter contexto
+            config: Configuracao de embedding (api_key, model, chunk_size, chunk_overlap)
         """
-        self.embeddings = OpenAIEmbeddings(
-            openai_api_key=api_key,
-            model=model,
-        )
+        self.embeddings = create_embeddings_client(config)
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
+            chunk_size=config.chunk_size,
+            chunk_overlap=config.chunk_overlap,
             length_function=len,
             separators=["\n\n", "\n", ". ", " ", ""],
         )
-        self.model = model
+        self.model = config.model
+
+    @classmethod
+    def from_organization(cls, db: Session, organization_id: uuid.UUID) -> "EmbeddingService | None":
+        """Cria um EmbeddingService a partir da configuracao da organizacao.
+
+        Args:
+            db: Sessao do banco de dados
+            organization_id: ID da organizacao
+
+        Returns:
+            EmbeddingService configurado ou None se nao configurado
+        """
+        config = get_embedding_config(db, organization_id)
+        if not config:
+            return None
+        return cls(config)
 
     def extract_text_from_pdf(self, pdf_bytes: bytes) -> str:
         """Extrai texto de um arquivo PDF.

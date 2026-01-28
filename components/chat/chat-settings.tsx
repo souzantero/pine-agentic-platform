@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings, PanelRightClose, PanelRight, Globe, Link } from "lucide-react";
+import { Settings, PanelRightClose, PanelRight, Globe, Link, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -123,6 +123,11 @@ const TOOL_INFO: Record<ToolKey, { label: string; description: string; icon: typ
     description: "Ler conteúdo de links",
     icon: Link,
   },
+  KNOWLEDGE: {
+    label: "Base de Conhecimento",
+    description: "Buscar nos documentos",
+    icon: Brain,
+  },
 };
 
 // Componente para renderizar toggles de ferramentas
@@ -133,7 +138,7 @@ function ToolsField({
   enabledTools: ToolKey[];
   onToggle: (tool: ToolKey, enabled: boolean) => void;
 }) {
-  const tools: ToolKey[] = ["WEB_FETCH", "WEB_SEARCH"];
+  const tools: ToolKey[] = ["WEB_FETCH", "WEB_SEARCH", "KNOWLEDGE"];
 
   return (
     <div className="space-y-3">

@@ -123,9 +123,9 @@ export interface Message {
 // ============================================
 
 // Ferramentas que podem ser habilitadas/desabilitadas pelo usuário
-export type ToolKey = "WEB_FETCH" | "WEB_SEARCH";
+export type ToolKey = "WEB_FETCH" | "WEB_SEARCH" | "KNOWLEDGE";
 
-export const ALL_TOOLS: ToolKey[] = ["WEB_FETCH", "WEB_SEARCH"];
+export const ALL_TOOLS: ToolKey[] = ["WEB_FETCH", "WEB_SEARCH", "KNOWLEDGE"];
 
 export interface ChatConfig {
   provider: string | null;

@@ -10,6 +10,7 @@ from src.database.entities import Provider
 from src.threads.schemas import RunConfig
 from .common import get_model
 from src.web import create_web_search_tool, create_web_fetch_tool
+from src.knowledge import create_knowledge_search_tool
 
 
 SYSTEM_PROMPT_TEMPLATE = """Você é um assistente de inteligência artificial prestativo, criativo e honesto.
@@ -42,6 +43,7 @@ SYSTEM_PROMPT_TEMPLATE = """Você é um assistente de inteligência artificial p
 ### Ferramentas
 - Quando o usuário compartilhar um link ou URL, use a ferramenta `web_fetch` para acessar e ler o conteúdo da página
 - Para buscar informações atualizadas na internet, use a ferramenta `web_search`
+- Para buscar informações nos documentos da base de conhecimento da organização, use a ferramenta `knowledge_search`
 - Sempre analise o conteúdo obtido antes de responder ao usuário
 
 Você está aqui para ajudar {user_name} da organização {organization_name} com qualquer tarefa ou pergunta."""
@@ -98,6 +100,12 @@ def build_agent(
         web_fetch_tool = create_web_fetch_tool(db, organization_id)
         if web_fetch_tool:
             tools.append(web_fetch_tool)
+
+    # Knowledge Search: criar apenas se habilitada pelo usuario (ou se enabled_tools for None)
+    if enabled_tools is None or "KNOWLEDGE" in enabled_tools:
+        knowledge_search_tool = create_knowledge_search_tool(db, organization_id)
+        if knowledge_search_tool:
+            tools.append(knowledge_search_tool)
 
     return create_agent(
         model=model,
