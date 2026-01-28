@@ -2,9 +2,9 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 
-from src.auth import CurrentUser, check_permission
-from src.core.database import DatabaseSession
-from src.core.entities import Permission
+from src.auth import CurrentUserDependency, check_permission
+from src.database import DatabaseDependency
+from src.database.entities import Permission
 
 from .schemas import (
     CreateOrgConfigRequest,
@@ -34,8 +34,8 @@ def _check_org_manage(db, user_id, organization_id):
 @router.get("", response_model=OrgConfigsListResponse)
 def list_configs(
     organization_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
     type: str | None = None,
 ):
     """Lista configuracoes da organizacao (requer ORGANIZATION_MANAGE)."""
@@ -48,8 +48,8 @@ def get_config(
     organization_id: uuid.UUID,
     type: str,
     key: str,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Retorna configuracao especifica (requer ORGANIZATION_MANAGE)."""
     _check_org_manage(db, current_user.id, organization_id)
@@ -60,8 +60,8 @@ def get_config(
 def create_config(
     organization_id: uuid.UUID,
     payload: CreateOrgConfigRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Cria configuracao (requer ORGANIZATION_MANAGE)."""
     _check_org_manage(db, current_user.id, organization_id)
@@ -74,8 +74,8 @@ def update_config(
     type: str,
     key: str,
     payload: UpdateOrgConfigRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Atualiza configuracao (requer ORGANIZATION_MANAGE)."""
     _check_org_manage(db, current_user.id, organization_id)
@@ -87,8 +87,8 @@ def delete_config(
     organization_id: uuid.UUID,
     type: str,
     key: str,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Remove configuracao (requer ORGANIZATION_MANAGE)."""
     _check_org_manage(db, current_user.id, organization_id)

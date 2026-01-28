@@ -7,7 +7,7 @@ from typing import List
 from fastapi import HTTPException, UploadFile, status
 from sqlmodel import Session, func, select
 
-from src.core.entities import Document, DocumentCollection, DocumentStatus
+from src.database.entities import Document, DocumentCollection, DocumentStatus
 from .document_processor import DocumentProcessor, DocumentProcessorError
 
 from .schemas import (

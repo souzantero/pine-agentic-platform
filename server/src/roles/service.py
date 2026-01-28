@@ -4,7 +4,7 @@ from typing import List
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from src.core.entities import OrganizationMember, Permission, Role, RolePermission, RoleScope
+from src.database.entities import OrganizationMember, Permission, Role, RolePermission, RoleScope
 
 from .schemas import RoleDetailResponse
 

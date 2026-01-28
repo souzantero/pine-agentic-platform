@@ -3,9 +3,9 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, status
 
-from src.auth import CurrentUser, check_permission
-from src.core.database import DatabaseSession
-from src.core.entities import Permission
+from src.auth import CurrentUserDependency, check_permission
+from src.database import DatabaseDependency
+from src.database.entities import Permission
 
 from .schemas import MemberDetailResponse, UpdateMemberRoleRequest
 from .service import (
@@ -20,8 +20,8 @@ router = APIRouter(prefix="/organizations/{organization_id}/members", tags=["mem
 @router.get("", response_model=List[MemberDetailResponse])
 def list_members(
     organization_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Lista todos os membros da organizacao (requer MEMBERS_READ)."""
     if not check_permission(db, current_user.id, organization_id, Permission.MEMBERS_READ):
@@ -36,8 +36,8 @@ def list_members(
 def remove_member(
     organization_id: uuid.UUID,
     member_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Remove um membro da organizacao (requer MEMBERS_MANAGE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.MEMBERS_MANAGE):
@@ -53,8 +53,8 @@ def update_member_role(
     organization_id: uuid.UUID,
     member_id: uuid.UUID,
     payload: UpdateMemberRoleRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Atualiza a role de um membro (requer MEMBERS_MANAGE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.MEMBERS_MANAGE):

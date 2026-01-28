@@ -6,9 +6,9 @@ from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 
 from src.agents.tools import get_tool_display_name
-from src.auth import CurrentMembership, CurrentUser, check_permission
-from src.core.database import DatabaseSession
-from src.core.entities import Permission
+from src.auth import CurrentMembershipDependency, CurrentUserDependency, check_permission
+from src.database import DatabaseDependency
+from src.database.entities import Permission
 from .helpers import agent_messages_to_list, chunk_to_text, is_tool_call_chunk
 from src.core.schemas import RunRequest
 
@@ -37,9 +37,9 @@ def _check_permission(db, user_id, organization_id, permission):
 @router.get("", response_model=List[ThreadResponse])
 def list_threads(
     organization_id: uuid.UUID,
-    current_user: CurrentUser,
-    membership: CurrentMembership,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    membership: CurrentMembershipDependency,
+    db: DatabaseDependency,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 50,
 ):
@@ -52,9 +52,9 @@ def list_threads(
 def create_thread(
     organization_id: uuid.UUID,
     payload: CreateThreadRequest,
-    current_user: CurrentUser,
-    membership: CurrentMembership,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    membership: CurrentMembershipDependency,
+    db: DatabaseDependency,
 ):
     """Cria uma nova thread (requer THREADS_WRITE)."""
     _check_permission(db, current_user.id, organization_id, Permission.THREADS_WRITE)
@@ -65,8 +65,8 @@ def create_thread(
 def get_thread(
     organization_id: uuid.UUID,
     thread_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Retorna detalhes de uma thread (requer THREADS_READ)."""
     _check_permission(db, current_user.id, organization_id, Permission.THREADS_READ)
@@ -78,8 +78,8 @@ def update_thread(
     organization_id: uuid.UUID,
     thread_id: uuid.UUID,
     payload: UpdateThreadRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Atualiza uma thread (requer THREADS_WRITE)."""
     _check_permission(db, current_user.id, organization_id, Permission.THREADS_WRITE)
@@ -90,8 +90,8 @@ def update_thread(
 def delete_thread(
     organization_id: uuid.UUID,
     thread_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Deleta uma thread (requer THREADS_DELETE)."""
     _check_permission(db, current_user.id, organization_id, Permission.THREADS_DELETE)
@@ -102,8 +102,8 @@ def delete_thread(
 async def get_thread_messages(
     organization_id: uuid.UUID,
     thread_id: str,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Retorna mensagens de uma thread (requer THREADS_READ)."""
     _check_permission(db, current_user.id, organization_id, Permission.THREADS_READ)
@@ -115,8 +115,8 @@ async def stream_run(
     organization_id: uuid.UUID,
     thread_id: str,
     payload: RunRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Executa com streaming SSE (requer THREADS_WRITE)."""
     _check_permission(db, current_user.id, organization_id, Permission.THREADS_WRITE)

@@ -1,20 +1,31 @@
 import uuid
 from typing import Annotated
 
+import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session, select
 
-from src.core.database import DatabaseSession
-from src.core.entities import OrganizationMember, Permission, RolePermission, User
+from src.database import DatabaseDependency
+from src.database.entities import OrganizationMember, Permission, RolePermission, User
+from src.core.env import jwt_algorithm, jwt_secret
 
-from .utils import bearer_scheme, decode_token
+bearer_scheme = HTTPBearer()
+
+
+def decode_token(token: str) -> dict | None:
+    """Decodifica e valida JWT token."""
+    try:
+        payload = jwt.decode(token, jwt_secret, algorithms=[jwt_algorithm])
+        return payload
+    except jwt.PyJWTError:
+        return None
 
 
 # Dependency para obter o usuario atual
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(bearer_scheme)],
-    db: DatabaseSession,
+    db: DatabaseDependency,
 ) -> User:
     """Dependency que retorna o usuario autenticado ou 401."""
     credentials_exception = HTTPException(
@@ -39,13 +50,13 @@ async def get_current_user(
 
 
 # Type alias para usar como dependency
-CurrentUser = Annotated[User, Depends(get_current_user)]
+CurrentUserDependency = Annotated[User, Depends(get_current_user)]
 
 
 async def get_current_membership(
     organization_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ) -> OrganizationMember:
     """Dependency que retorna o membership do usuario na organizacao ou 403."""
     statement = select(OrganizationMember).where(
@@ -64,7 +75,7 @@ async def get_current_membership(
 
 
 # Type alias para membership
-CurrentMembership = Annotated[OrganizationMember, Depends(get_current_membership)]
+CurrentMembershipDependency = Annotated[OrganizationMember, Depends(get_current_membership)]
 
 
 def get_user_permissions(db: Session, user_id: uuid.UUID, organization_id: uuid.UUID) -> set[Permission]:
@@ -102,8 +113,8 @@ def require_permission(required_permission: Permission):
     """
 
     async def permission_checker(
-        current_user: CurrentUser,
-        db: DatabaseSession,
+        current_user: CurrentUserDependency,
+        db: DatabaseDependency,
         organization_id: uuid.UUID,
     ) -> User:
         if not check_permission(db, current_user.id, organization_id, required_permission):

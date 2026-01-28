@@ -6,7 +6,7 @@ from typing import List
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from src.core.entities import Organization, OrganizationInvite, OrganizationMember, Role
+from src.database.entities import Organization, OrganizationInvite, OrganizationMember, Role
 from src.organization.schemas import OrganizationResponse
 from src.roles.schemas import RoleResponse
 

@@ -10,14 +10,14 @@ from langgraph.types import Command
 from sqlmodel import select
 from tavily import AsyncTavilyClient
 
-from src.core.entities import (
+from src.database.entities import (
     OrganizationConfig,
     ConfigType,
     ConfigKey,
     ProviderType,
     Provider,
 )
-from src.core.database import Database
+from src.database import Database
 from src.agents.tools.common import (
     Summary,
     get_provider_api_key,

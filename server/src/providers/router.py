@@ -2,9 +2,9 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, status
 
-from src.auth import CurrentUser, check_permission
-from src.core.database import DatabaseSession
-from src.core.entities import Permission
+from src.auth import CurrentUserDependency, check_permission
+from src.database import DatabaseDependency
+from src.database.entities import Permission
 
 from .schemas import CreateProviderRequest, ProviderResponse, ProvidersListResponse
 from .service import (
@@ -19,8 +19,8 @@ router = APIRouter(prefix="/organizations/{organization_id}/providers", tags=["p
 @router.get("", response_model=ProvidersListResponse)
 def list_providers(
     organization_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
     type: str | None = None,
 ):
     """Lista provedores da organizacao (requer ORGANIZATION_MANAGE)."""
@@ -36,8 +36,8 @@ def list_providers(
 def create_or_update_provider(
     organization_id: uuid.UUID,
     payload: CreateProviderRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Adiciona ou atualiza um provedor (requer ORGANIZATION_MANAGE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):
@@ -54,8 +54,8 @@ def create_or_update_provider(
 def delete_provider(
     organization_id: uuid.UUID,
     provider_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Remove um provedor (requer ORGANIZATION_MANAGE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.ORGANIZATION_MANAGE):

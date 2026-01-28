@@ -3,9 +3,9 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, status
 
-from src.auth import CurrentUser, check_permission
-from src.core.database import DatabaseSession
-from src.core.entities import Permission
+from src.auth import CurrentUserDependency, check_permission
+from src.database import DatabaseDependency
+from src.database.entities import Permission
 
 from .schemas import CreateInviteRequest, InviteInfoResponse, InviteListItemResponse, InviteResponse
 from .service import (
@@ -24,8 +24,8 @@ router = APIRouter(tags=["invites"])
 )
 def list_invites(
     organization_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Lista convites pendentes da organizacao (requer MEMBERS_INVITE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.MEMBERS_INVITE):
@@ -44,8 +44,8 @@ def list_invites(
 def create_invite(
     organization_id: uuid.UUID,
     payload: CreateInviteRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Cria um convite para a organizacao (requer MEMBERS_INVITE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.MEMBERS_INVITE):
@@ -57,12 +57,12 @@ def create_invite(
 
 
 @router.get("/invites/{token}", response_model=InviteInfoResponse)
-def get_invite_info(token: str, db: DatabaseSession):
+def get_invite_info(token: str, db: DatabaseDependency):
     """Retorna informacoes publicas do convite (para pagina de aceite)."""
     return get_invite_info_service(token, db)
 
 
 @router.post("/invites/{token}/accept", status_code=status.HTTP_201_CREATED)
-def accept_invite(token: str, current_user: CurrentUser, db: DatabaseSession):
+def accept_invite(token: str, current_user: CurrentUserDependency, db: DatabaseDependency):
     """Aceita um convite e adiciona o usuario a organizacao."""
     return accept_invite_service(token, current_user.id, db)

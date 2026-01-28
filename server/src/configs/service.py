@@ -3,7 +3,7 @@ import uuid
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from src.core.entities import ConfigKey, ConfigType, OrganizationConfig, OrganizationProvider, Provider, ProviderType
+from src.database.entities import ConfigKey, ConfigType, OrganizationConfig, OrganizationProvider, Provider, ProviderType
 
 from .schemas import OrgConfigResponse, OrgConfigsListResponse
 

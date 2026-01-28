@@ -5,9 +5,9 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, status
 
-from src.auth import CurrentUser, check_permission
-from src.core.database import DatabaseSession
-from src.core.entities import Permission
+from src.auth import CurrentUserDependency, check_permission
+from src.database import DatabaseDependency
+from src.database.entities import Permission
 
 from .schemas import (
     CollectionDetailResponse,
@@ -44,8 +44,8 @@ collections_router = APIRouter(
 @collections_router.get("", response_model=CollectionListResponse)
 def list_collections(
     organization_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Lista todas as colecoes da organizacao (requer COLLECTIONS_READ)."""
     if not check_permission(db, current_user.id, organization_id, Permission.COLLECTIONS_READ):
@@ -60,8 +60,8 @@ def list_collections(
 def get_collection(
     organization_id: uuid.UUID,
     collection_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Retorna detalhes de uma colecao (requer COLLECTIONS_READ)."""
     if not check_permission(db, current_user.id, organization_id, Permission.COLLECTIONS_READ):
@@ -76,8 +76,8 @@ def get_collection(
 def create_collection(
     organization_id: uuid.UUID,
     payload: CreateCollectionRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Cria uma nova colecao (requer COLLECTIONS_CREATE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.COLLECTIONS_CREATE):
@@ -93,8 +93,8 @@ def update_collection(
     organization_id: uuid.UUID,
     collection_id: uuid.UUID,
     payload: UpdateCollectionRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Atualiza uma colecao (requer COLLECTIONS_UPDATE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.COLLECTIONS_UPDATE):
@@ -109,8 +109,8 @@ def update_collection(
 def delete_collection(
     organization_id: uuid.UUID,
     collection_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Remove uma colecao e todos os seus documentos (requer COLLECTIONS_DELETE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.COLLECTIONS_DELETE):
@@ -135,8 +135,8 @@ documents_router = APIRouter(
 def list_documents(
     organization_id: uuid.UUID,
     collection_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Lista todos os documentos de uma colecao (requer DOCUMENTS_READ)."""
     if not check_permission(db, current_user.id, organization_id, Permission.DOCUMENTS_READ):
@@ -152,8 +152,8 @@ def get_document(
     organization_id: uuid.UUID,
     collection_id: uuid.UUID,
     document_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Retorna detalhes de um documento com URL de download (requer DOCUMENTS_READ)."""
     if not check_permission(db, current_user.id, organization_id, Permission.DOCUMENTS_READ):
@@ -168,8 +168,8 @@ def get_document(
 async def upload_document(
     organization_id: uuid.UUID,
     collection_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
     file: UploadFile = File(...),
 ):
     """Upload de documento PDF (requer DOCUMENTS_CREATE)."""
@@ -186,8 +186,8 @@ def delete_document(
     organization_id: uuid.UUID,
     collection_id: uuid.UUID,
     document_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Remove um documento e seus chunks (requer DOCUMENTS_DELETE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.DOCUMENTS_DELETE):

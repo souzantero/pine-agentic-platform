@@ -5,8 +5,8 @@ from langchain.agents import create_agent
 from langchain.agents.middleware import dynamic_prompt, ModelRequest
 from langgraph.checkpoint.postgres.base import BaseCheckpointSaver
 
-from src.core.database import Database
-from src.core.entities import Provider
+from src.database import Database
+from src.database.entities import Provider
 from src.core.schemas import RunConfig
 from src.agents.tools.common import get_model
 from src.agents.tools.web_search import create_web_search_tool

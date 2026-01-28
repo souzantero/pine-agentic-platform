@@ -1,7 +1,5 @@
 from contextlib import AsyncExitStack
-from typing import Annotated
 
-from fastapi import Depends
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from sqlmodel import Session, create_engine
 
@@ -16,8 +14,6 @@ def get_session():
 
 
 Database = Session
-# Type alias para injecao de dependencia do banco de dados
-DatabaseSession = Annotated[Session, Depends(get_session)]
 
 
 # Variaveis globais para o checkpointer

@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.core.database import open_checkpointer, close_checkpointer
+from src.database import open_checkpointer, close_checkpointer
 from src.auth.router import router as auth_router
 from src.organization.router import router as organization_router
 from src.organization.members.router import router as members_router

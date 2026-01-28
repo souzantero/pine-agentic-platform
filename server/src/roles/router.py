@@ -3,9 +3,9 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, status
 
-from src.auth import CurrentUser, check_permission
-from src.core.database import DatabaseSession
-from src.core.entities import Permission
+from src.auth import CurrentUserDependency, check_permission
+from src.database import DatabaseDependency
+from src.database.entities import Permission
 
 from .schemas import CreateRoleRequest, RoleDetailResponse, UpdateRoleRequest
 from .service import (
@@ -21,8 +21,8 @@ router = APIRouter(prefix="/organizations/{organization_id}/roles", tags=["roles
 @router.get("", response_model=List[RoleDetailResponse])
 def list_roles(
     organization_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Lista todas as roles da organizacao (requer ROLES_READ)."""
     if not check_permission(db, current_user.id, organization_id, Permission.ROLES_READ):
@@ -37,8 +37,8 @@ def list_roles(
 def create_role(
     organization_id: uuid.UUID,
     payload: CreateRoleRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Cria uma nova role na organizacao (requer ROLES_MANAGE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.ROLES_MANAGE):
@@ -54,8 +54,8 @@ def update_role(
     organization_id: uuid.UUID,
     role_id: uuid.UUID,
     payload: UpdateRoleRequest,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Atualiza uma role (requer ROLES_MANAGE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.ROLES_MANAGE):
@@ -70,8 +70,8 @@ def update_role(
 def delete_role(
     organization_id: uuid.UUID,
     role_id: uuid.UUID,
-    current_user: CurrentUser,
-    db: DatabaseSession,
+    current_user: CurrentUserDependency,
+    db: DatabaseDependency,
 ):
     """Deleta uma role (requer ROLES_MANAGE)."""
     if not check_permission(db, current_user.id, organization_id, Permission.ROLES_MANAGE):

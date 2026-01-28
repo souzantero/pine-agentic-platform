@@ -6,8 +6,8 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, col, select
 
 from src.agents.agent import AgentContext, build_agent
-from src.core.database import get_checkpointer
-from src.core.entities import Organization, OrganizationProvider, Provider, ProviderType, Thread
+from src.database import get_checkpointer
+from src.database.entities import Organization, OrganizationProvider, Provider, ProviderType, Thread
 from .helpers import agent_messages_to_list, get_config
 
 from .schemas import ThreadMessagesResponse, ThreadResponse

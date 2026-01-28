@@ -5,7 +5,7 @@ import uuid
 
 from sqlmodel import Session, select
 
-from src.core.entities import (
+from src.database.entities import (
     Document,
     DocumentChunk,
     DocumentStatus,

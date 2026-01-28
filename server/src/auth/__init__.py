@@ -1,14 +1,14 @@
 from .dependencies import (
-    CurrentMembership,
-    CurrentUser,
+    CurrentMembershipDependency,
+    CurrentUserDependency,
     check_permission,
     get_user_permissions,
     require_permission,
 )
 
 __all__ = [
-    "CurrentMembership",
-    "CurrentUser",
+    "CurrentMembershipDependency",
+    "CurrentUserDependency",
     "check_permission",
     "get_user_permissions",
     "require_permission",

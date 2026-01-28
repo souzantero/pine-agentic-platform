@@ -5,6 +5,7 @@ from typing import List
 from pydantic import EmailStr
 
 from src.core.schemas import CamelCaseModel
+from src.organization.schemas import OrganizationResponse
 
 
 # =============================================================================
@@ -48,7 +49,7 @@ class MembershipRoleResponse(CamelCaseModel):
 class MembershipResponse(CamelCaseModel):
     id: uuid.UUID
     organization_id: uuid.UUID
-    organization: "OrganizationResponse"
+    organization: OrganizationResponse
     role: MembershipRoleResponse
     is_owner: bool
 
@@ -57,7 +58,3 @@ class MeResponse(CamelCaseModel):
     user: UserResponse
     memberships: List[MembershipResponse]
 
-
-from src.organization.schemas import OrganizationResponse  # noqa: E402, F811
-
-MembershipResponse.model_rebuild()
