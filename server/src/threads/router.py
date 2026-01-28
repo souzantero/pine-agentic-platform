@@ -10,7 +10,7 @@ from src.auth import CurrentMembershipDependency, CurrentUserDependency, check_p
 from src.database import DatabaseDependency
 from src.database.entities import Permission
 from .helpers import agent_messages_to_list, chunk_to_text, is_tool_call_chunk
-from src.core.schemas import RunRequest
+from .schemas import RunRequest
 
 from .schemas import CreateThreadRequest, ThreadMessagesResponse, ThreadResponse, UpdateThreadRequest
 from .service import (

@@ -2,7 +2,37 @@ import uuid
 from datetime import datetime
 from typing import List
 
+from langchain_core.messages import HumanMessage
+
 from src.core.schemas import CamelCaseModel
+
+
+# =============================================================================
+# Agent/Run Schemas
+# =============================================================================
+
+
+class MessageInput(CamelCaseModel):
+    content: str
+
+    def to_agent(self):
+        return HumanMessage(content=self.content)
+
+
+class RunInput(CamelCaseModel):
+    messages: List[MessageInput]
+
+
+class RunConfig(CamelCaseModel):
+    """Configuracao de execucao."""
+
+    provider: str  # OPENAI, OPENROUTER
+    model: str
+
+
+class RunRequest(CamelCaseModel):
+    input: RunInput
+    config: RunConfig
 
 
 class CreateThreadRequest(CamelCaseModel):
