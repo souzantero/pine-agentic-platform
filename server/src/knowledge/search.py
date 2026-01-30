@@ -7,7 +7,6 @@ from langchain_core.tools import tool, InjectedToolCallId
 from langchain_core.messages import ToolMessage
 from typing_extensions import Annotated
 from langgraph.types import Command
-from sqlalchemy import text
 from sqlmodel import select
 
 from src.database.entities import (
@@ -17,6 +16,7 @@ from src.database.entities import (
 )
 from src.database import Database
 from .config import get_embedding_service
+from .services import RetrievalService, SearchFilters
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +53,15 @@ def create_knowledge_search_tool(db: Database, organization_id: uuid.UUID):
         logger.info(f"Organizacao {organization_id} nao possui documentos processados")
         return None
 
+    # Cria o servico de retrieval
+    retrieval_service = RetrievalService(db)
+
     @tool
     async def knowledge_search(
         query: str,
         tool_call_id: Annotated[str, InjectedToolCallId],
         max_results: int = 5,
+        similarity_threshold: float | None = None,
     ) -> Command:
         """Busca informacoes na base de conhecimento da organizacao.
 
@@ -69,6 +73,7 @@ def create_knowledge_search_tool(db: Database, organization_id: uuid.UUID):
         Args:
             query: Pergunta ou termos de busca (ex: "qual a politica de ferias?")
             max_results: Numero maximo de trechos a retornar (padrao: 5)
+            similarity_threshold: Limite minimo de similaridade (0.0 a 1.0). Ex: 0.7 retorna apenas resultados com 70%+ de similaridade.
 
         Returns:
             Trechos relevantes dos documentos com suas fontes
@@ -77,35 +82,19 @@ def create_knowledge_search_tool(db: Database, organization_id: uuid.UUID):
             # Gera embedding da query
             query_embedding = embedding_service.embed_single(query)
 
-            # Busca chunks similares usando pgvector
-            # Usa SQL raw para aproveitar o operador <=> (cosine distance)
-            # Nota: usamos \: para escapar o :: do cast PostgreSQL
-            sql = text(r"""
-                SELECT
-                    dc.content,
-                    dc.chunk_index,
-                    d.name as document_name,
-                    col.name as collection_name,
-                    1 - (dc.embedding <=> :query_embedding\:\:vector) as similarity
-                FROM document_chunks dc
-                JOIN documents d ON dc.document_id = d.id
-                JOIN document_collections col ON d.collection_id = col.id
-                WHERE col.organization_id = :org_id
-                  AND d.status = 'COMPLETED'
-                ORDER BY dc.embedding <=> :query_embedding\:\:vector
-                LIMIT :max_results
-            """)
+            # Configura filtros de busca (modo hibrido com vetor e texto)
+            filters = SearchFilters(
+                organization_id=organization_id,
+                query_text=query,
+                query_embedding=query_embedding,
+                max_results=max_results,
+                similarity_threshold=similarity_threshold,
+            )
 
-            # Executa a query
-            result = db.exec(sql, params={
-                "query_embedding": query_embedding,
-                "org_id": str(organization_id),
-                "max_results": max_results,
-            })
+            # Executa a busca
+            results = retrieval_service.search(filters)
 
-            chunks = result.fetchall()
-
-            if not chunks:
+            if not results:
                 return Command(
                     update={
                         "messages": [
@@ -120,17 +109,16 @@ def create_knowledge_search_tool(db: Database, organization_id: uuid.UUID):
                 )
 
             # Formata saida
-            formatted_output = f"Encontrei {len(chunks)} trechos relevantes na base de conhecimento:\n\n"
+            formatted_output = f"Encontrei {len(results)} trechos relevantes na base de conhecimento:\n\n"
 
-            for i, chunk in enumerate(chunks, 1):
-                content, chunk_index, doc_name, collection_name, similarity = chunk
-                similarity_pct = round(similarity * 100, 1)
+            for i, result in enumerate(results, 1):
+                score_pct = round(result.score * 100, 1)
 
-                formatted_output += f"--- TRECHO {i} (Relevância: {similarity_pct}%) ---\n"
-                formatted_output += f"Documento: {doc_name}\n"
-                formatted_output += f"Coleção: {collection_name}\n"
-                formatted_output += f"Parte: {chunk_index + 1}\n\n"
-                formatted_output += f"{content}\n"
+                formatted_output += f"--- TRECHO {i} (Relevância: {score_pct}%) ---\n"
+                formatted_output += f"Documento: {result.document_name}\n"
+                formatted_output += f"Coleção: {result.collection_name}\n"
+                formatted_output += f"Parte: {result.chunk_index + 1}\n\n"
+                formatted_output += f"{result.content}\n"
                 formatted_output += "\n" + "-" * 60 + "\n\n"
 
             return Command(
