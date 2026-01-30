@@ -2,7 +2,7 @@
 
 from .storage import StorageService
 from .extraction import ExtractionService, ExtractionError
-from .chunking import ChunkingService, ChunkingConfig, TextChunk
+from .chunking import ChunkingService, ChunkingConfig, ChunkingStrategy, TextChunk
 from .embedding import EmbeddingService, EmbeddingConfig, EmbeddingError
 
 __all__ = [
@@ -11,6 +11,7 @@ __all__ = [
     "ExtractionError",
     "ChunkingService",
     "ChunkingConfig",
+    "ChunkingStrategy",
     "TextChunk",
     "EmbeddingService",
     "EmbeddingConfig",

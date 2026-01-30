@@ -71,11 +71,14 @@ class DocumentPipeline:
         """
         storage = get_storage_service(db, organization_id)
         extraction = get_extraction_service()
-        chunking = get_chunking_service(db, organization_id)
-        embedding = get_embedding_service(db, organization_id)
 
+        # Embedding primeiro (necessario para chunking SEMANTIC)
+        embedding = get_embedding_service(db, organization_id)
         if not embedding:
             raise ConfigurationError("Servico de embedding nao configurado")
+
+        # Chunking recebe embedding para estrategia SEMANTIC
+        chunking = get_chunking_service(db, organization_id, embedding_service=embedding)
 
         return cls(
             db=db,

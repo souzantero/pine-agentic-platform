@@ -19,6 +19,7 @@ from .services import (
     ExtractionService,
     ChunkingService,
     ChunkingConfig,
+    ChunkingStrategy,
     EmbeddingService,
     EmbeddingConfig,
 )
@@ -135,25 +136,54 @@ def get_chunking_config(db: Session, organization_id: uuid.UUID) -> ChunkingConf
     if not knowledge_config:
         return ChunkingConfig()
 
-    embedding_settings = knowledge_config.get("embedding", {})
+    chunking_settings = knowledge_config.get("chunking", {})
+
+    # Le estrategia de chunking (default: RECURSIVE)
+    strategy_str = chunking_settings.get("strategy", "RECURSIVE")
+    try:
+        strategy = ChunkingStrategy(strategy_str)
+    except ValueError:
+        logger.warning(f"Estrategia de chunking invalida: {strategy_str}, usando RECURSIVE")
+        strategy = ChunkingStrategy.RECURSIVE
+
     return ChunkingConfig(
-        chunk_size=embedding_settings.get("chunkSize", 1000),
-        chunk_overlap=embedding_settings.get("chunkOverlap", 200),
+        strategy=strategy,
+        chunk_size=chunking_settings.get("chunkSize", 1000),
+        chunk_overlap=chunking_settings.get("chunkOverlap", 200),
+        breakpoint_threshold_type=chunking_settings.get("breakpointThresholdType", "percentile"),
     )
 
 
-def get_chunking_service(db: Session, organization_id: uuid.UUID) -> ChunkingService:
+def get_chunking_service(
+    db: Session,
+    organization_id: uuid.UUID,
+    embedding_service: EmbeddingService | None = None,
+) -> ChunkingService:
     """Cria um ChunkingService configurado para a organizacao.
 
     Args:
         db: Sessao do banco de dados
         organization_id: ID da organizacao
+        embedding_service: Servico de embedding (necessario para estrategia SEMANTIC)
 
     Returns:
         ChunkingService configurado
+
+    Raises:
+        ConfigurationError: Se estrategia SEMANTIC for usada sem embedding_service
     """
     config = get_chunking_config(db, organization_id)
-    return ChunkingService(config)
+
+    # Se estrategia for SEMANTIC, precisa do embedding client
+    embeddings = None
+    if config.strategy == ChunkingStrategy.SEMANTIC:
+        if not embedding_service:
+            raise ConfigurationError(
+                "Estrategia SEMANTIC requer servico de embedding configurado"
+            )
+        embeddings = embedding_service.client
+
+    return ChunkingService(config, embeddings=embeddings)
 
 
 def get_embedding_config(db: Session, organization_id: uuid.UUID) -> EmbeddingConfig | None:

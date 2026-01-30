@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Brain, Check, AlertCircle } from "lucide-react";
+import { Brain, Check, AlertCircle, Scissors, Sparkles } from "lucide-react";
 
 interface KnowledgeConfig {
   storage?: {
@@ -33,10 +33,47 @@ interface KnowledgeConfig {
   embedding?: {
     provider?: string;
     model?: string;
+  };
+  chunking?: {
+    strategy?: string;
     chunkSize?: number;
     chunkOverlap?: number;
+    breakpointThresholdType?: string;
   };
 }
+
+// Estrategias de chunking
+const CHUNKING_STRATEGIES = [
+  {
+    value: "RECURSIVE",
+    label: "Recursivo",
+    description: "Divide o texto por tamanho usando separadores naturais (parágrafos, frases)",
+  },
+  {
+    value: "SEMANTIC",
+    label: "Semântico",
+    description: "Divide o texto por similaridade semântica usando embeddings",
+  },
+];
+
+// Tipos de threshold para chunking semantico
+const BREAKPOINT_THRESHOLD_TYPES = [
+  {
+    value: "percentile",
+    label: "Percentil",
+    description: "Usa o percentil da distribuição de distâncias",
+  },
+  {
+    value: "standard_deviation",
+    label: "Desvio Padrão",
+    description: "Usa o desvio padrão das distâncias",
+  },
+  {
+    value: "interquartile",
+    label: "Interquartil",
+    description: "Usa o intervalo interquartil das distâncias",
+  },
+];
 
 // Modelos de embedding por provider
 const EMBEDDING_MODELS: Record<string, { value: string; label: string }[]> = {
@@ -47,9 +84,11 @@ const EMBEDDING_MODELS: Record<string, { value: string; label: string }[]> = {
   ],
 };
 
-// Valores padrão
+// Valores padrao
 const DEFAULT_CHUNK_SIZE = 1000;
 const DEFAULT_CHUNK_OVERLAP = 200;
+const DEFAULT_CHUNKING_STRATEGY = "RECURSIVE";
+const DEFAULT_BREAKPOINT_THRESHOLD_TYPE = "percentile";
 
 export default function KnowledgePage() {
   const router = useRouter();
@@ -63,13 +102,19 @@ export default function KnowledgePage() {
   } = useConfigs("FEATURE");
 
   // Estados locais do form, null significa "usar valor da config"
+  // Storage
   const [localStorageProvider, setLocalStorageProvider] = useState<string | null>(null);
   const [localBucket, setLocalBucket] = useState<string | null>(null);
   const [localRegion, setLocalRegion] = useState<string | null>(null);
+  // Embedding
   const [localEmbeddingProvider, setLocalEmbeddingProvider] = useState<string | null>(null);
   const [localEmbeddingModel, setLocalEmbeddingModel] = useState<string | null>(null);
+  // Chunking
+  const [localChunkingStrategy, setLocalChunkingStrategy] = useState<string | null>(null);
   const [localChunkSize, setLocalChunkSize] = useState<number | null>(null);
   const [localChunkOverlap, setLocalChunkOverlap] = useState<number | null>(null);
+  const [localBreakpointThresholdType, setLocalBreakpointThresholdType] = useState<string | null>(null);
+  // UI
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -96,20 +141,24 @@ export default function KnowledgePage() {
   // Embedding values
   const embeddingProvider = localEmbeddingProvider ?? configData.embedding?.provider ?? "";
   const embeddingModel = localEmbeddingModel ?? configData.embedding?.model ?? "";
-  const chunkSize = localChunkSize ?? configData.embedding?.chunkSize ?? DEFAULT_CHUNK_SIZE;
-  const chunkOverlap = localChunkOverlap ?? configData.embedding?.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP;
 
-  // Modelos disponíveis para o provider selecionado
+  // Chunking values
+  const chunkingStrategy = localChunkingStrategy ?? configData.chunking?.strategy ?? DEFAULT_CHUNKING_STRATEGY;
+  const chunkSize = localChunkSize ?? configData.chunking?.chunkSize ?? DEFAULT_CHUNK_SIZE;
+  const chunkOverlap = localChunkOverlap ?? configData.chunking?.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP;
+  const breakpointThresholdType = localBreakpointThresholdType ?? configData.chunking?.breakpointThresholdType ?? DEFAULT_BREAKPOINT_THRESHOLD_TYPE;
+
+  // Modelos disponiveis para o provider selecionado
   const availableModels = embeddingProvider ? EMBEDDING_MODELS[embeddingProvider] || [] : [];
 
-  // Redirect se sem permissão
+  // Redirect se sem permissao
   useEffect(() => {
     if (!authLoading && !canManage) {
       router.push("/");
     }
   }, [authLoading, canManage, router]);
 
-  // Quando muda o provider de embedding, limpa o modelo se não for compatível
+  // Quando muda o provider de embedding, limpa o modelo se nao for compativel
   useEffect(() => {
     if (embeddingProvider && availableModels.length > 0) {
       const modelExists = availableModels.some(m => m.value === embeddingModel);
@@ -140,13 +189,17 @@ export default function KnowledgePage() {
       setError("Selecione um modelo de embedding");
       return;
     }
-    if (chunkSize < 100 || chunkSize > 10000) {
-      setError("O tamanho do chunk deve estar entre 100 e 10000");
-      return;
-    }
-    if (chunkOverlap < 0 || chunkOverlap >= chunkSize) {
-      setError("O overlap deve ser maior ou igual a 0 e menor que o tamanho do chunk");
-      return;
+
+    // Validacoes especificas por estrategia
+    if (chunkingStrategy === "RECURSIVE") {
+      if (chunkSize < 100 || chunkSize > 10000) {
+        setError("O tamanho do chunk deve estar entre 100 e 10000");
+        return;
+      }
+      if (chunkOverlap < 0 || chunkOverlap >= chunkSize) {
+        setError("O overlap deve ser maior ou igual a 0 e menor que o tamanho do chunk");
+        return;
+      }
     }
 
     setSaving(true);
@@ -161,12 +214,16 @@ export default function KnowledgePage() {
       embedding: {
         provider: embeddingProvider,
         model: embeddingModel,
+      },
+      chunking: {
+        strategy: chunkingStrategy,
         chunkSize,
         chunkOverlap,
+        breakpointThresholdType,
       },
     };
 
-    // Se já existe config, atualiza; senão, cria nova
+    // Se ja existe config, atualiza; senao, cria nova
     const result = knowledgeConfig
       ? await updateConfig("FEATURE", "KNOWLEDGE", true, config as Record<string, unknown>)
       : await createConfig("FEATURE", "KNOWLEDGE", true, config as Record<string, unknown>);
@@ -181,8 +238,10 @@ export default function KnowledgePage() {
       setLocalRegion(null);
       setLocalEmbeddingProvider(null);
       setLocalEmbeddingModel(null);
+      setLocalChunkingStrategy(null);
       setLocalChunkSize(null);
       setLocalChunkOverlap(null);
+      setLocalBreakpointThresholdType(null);
       setTimeout(() => setSuccess(false), 3000);
     }
 
@@ -198,6 +257,9 @@ export default function KnowledgePage() {
   const hasStorageProviders = storageProviders.length > 0;
   const hasEmbeddingProviders = embeddingProviders.length > 0;
   const canSave = hasStorageProviders && hasEmbeddingProviders && storageProvider && embeddingProvider;
+
+  // Encontra a estrategia selecionada para mostrar descricao
+  const selectedStrategy = CHUNKING_STRATEGIES.find(s => s.value === chunkingStrategy);
 
   return (
     <AppLayout>
@@ -317,12 +379,12 @@ export default function KnowledgePage() {
             </CardContent>
           </Card>
 
-          {/* Card de Embedding */}
+          {/* Card de Vetorizacao */}
           <Card>
             <CardHeader>
               <CardTitle>Vetorização</CardTitle>
               <CardDescription>
-                Configure como os documentos serão processados e indexados
+                Configure o modelo de embedding para busca semântica
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -370,40 +432,121 @@ export default function KnowledgePage() {
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                <div className="space-y-2">
-                  <Label htmlFor="chunk-size">Tamanho do Chunk</Label>
-                  <Input
-                    id="chunk-size"
-                    type="number"
-                    min={100}
-                    max={10000}
-                    value={chunkSize}
-                    onChange={(e) => setLocalChunkSize(parseInt(e.target.value) || DEFAULT_CHUNK_SIZE)}
-                    disabled={saving}
-                  />
+          {/* Card de Chunking */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Scissors className="h-5 w-5" />
+                Chunking
+              </CardTitle>
+              <CardDescription>
+                Configure como os documentos serão divididos em partes menores
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="chunking-strategy">Estratégia</Label>
+                <Select
+                  value={chunkingStrategy}
+                  onValueChange={setLocalChunkingStrategy}
+                  disabled={saving}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma estratégia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CHUNKING_STRATEGIES.map((strategy) => (
+                      <SelectItem key={strategy.value} value={strategy.value}>
+                        <div className="flex items-center gap-2">
+                          {strategy.value === "SEMANTIC" && <Sparkles className="h-4 w-4" />}
+                          {strategy.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedStrategy && (
                   <p className="text-xs text-muted-foreground">
-                    Caracteres por chunk (100-10000)
+                    {selectedStrategy.description}
                   </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="chunk-overlap">Overlap</Label>
-                  <Input
-                    id="chunk-overlap"
-                    type="number"
-                    min={0}
-                    max={chunkSize - 1}
-                    value={chunkOverlap}
-                    onChange={(e) => setLocalChunkOverlap(parseInt(e.target.value) || 0)}
-                    disabled={saving}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Sobreposição entre chunks
-                  </p>
-                </div>
+                )}
               </div>
+
+              {/* Campos para estrategia RECURSIVE */}
+              {chunkingStrategy === "RECURSIVE" && (
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="space-y-2">
+                    <Label htmlFor="chunk-size">Tamanho do Chunk</Label>
+                    <Input
+                      id="chunk-size"
+                      type="number"
+                      min={100}
+                      max={10000}
+                      value={chunkSize}
+                      onChange={(e) => setLocalChunkSize(parseInt(e.target.value) || DEFAULT_CHUNK_SIZE)}
+                      disabled={saving}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Caracteres por chunk (100-10000)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="chunk-overlap">Overlap</Label>
+                    <Input
+                      id="chunk-overlap"
+                      type="number"
+                      min={0}
+                      max={chunkSize - 1}
+                      value={chunkOverlap}
+                      onChange={(e) => setLocalChunkOverlap(parseInt(e.target.value) || 0)}
+                      disabled={saving}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Sobreposição entre chunks
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Campos para estrategia SEMANTIC */}
+              {chunkingStrategy === "SEMANTIC" && (
+                <div className="pt-4 border-t space-y-4">
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/50 rounded-md flex items-start gap-2">
+                    <Sparkles className="h-4 w-4 text-blue-600 mt-0.5" />
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      O chunking semântico usa o modelo de embedding configurado acima para
+                      dividir o texto em partes com significado coerente.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="breakpoint-threshold-type">Tipo de Threshold</Label>
+                    <Select
+                      value={breakpointThresholdType}
+                      onValueChange={setLocalBreakpointThresholdType}
+                      disabled={saving}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BREAKPOINT_THRESHOLD_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {BREAKPOINT_THRESHOLD_TYPES.find(t => t.value === breakpointThresholdType)?.description}
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
