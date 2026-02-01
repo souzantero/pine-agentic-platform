@@ -117,6 +117,13 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, index=True)
     name: str
     password_hash: str
+
+    # Campos de verificacao de email
+    email_verified: bool = Field(default=False)
+    email_verification_token: str | None = Field(default=None, index=True)
+    email_verification_token_expires_at: datetime | None = Field(default=None)
+    last_verification_email_sent_at: datetime | None = Field(default=None)
+
     created_at: datetime = Field(default_factory=get_now)
     updated_at: datetime = Field(default_factory=get_now, sa_column_kwargs={"onupdate": get_now})
 

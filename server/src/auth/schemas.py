@@ -58,3 +58,33 @@ class MeResponse(CamelCaseModel):
     user: UserResponse
     memberships: List[MembershipResponse]
 
+
+# =============================================================================
+# Email Verification Schemas
+# =============================================================================
+
+
+class RegisterResponse(CamelCaseModel):
+    """Resposta do registro (sem token, requer verificacao)"""
+
+    message: str
+    email: str
+
+
+class VerifyEmailRequest(CamelCaseModel):
+    """Request para verificar email"""
+
+    token: str
+
+
+class ResendVerificationRequest(CamelCaseModel):
+    """Request para reenviar email de verificacao"""
+
+    email: EmailStr
+
+
+class ResendVerificationResponse(CamelCaseModel):
+    """Resposta do reenvio de verificacao"""
+
+    message: str
+

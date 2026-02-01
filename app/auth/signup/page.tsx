@@ -39,7 +39,7 @@ export default function SignupPage() {
     setLoading(true);
 
     if (password !== confirmPassword) {
-      setError("As senhas não coincidem");
+      setError("As senhas nao coincidem");
       setLoading(false);
       return;
     }
@@ -49,6 +49,12 @@ export default function SignupPage() {
     if (result.error) {
       setError(result.error);
       setLoading(false);
+      return;
+    }
+
+    // Redirecionar para pagina de verificacao pendente
+    if (result.needsVerification) {
+      router.push(`/auth/verify-pending?email=${encodeURIComponent(email)}`);
     }
   };
 

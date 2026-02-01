@@ -19,6 +19,12 @@ import {
 } from "./storage";
 import type { User, Permission, Membership } from "./types";
 
+interface SignUpResult {
+  error?: string;
+  needsVerification?: boolean;
+  email?: string;
+}
+
 interface SessionContextType {
   user: User | null;
   memberships: Membership[];
@@ -31,7 +37,7 @@ interface SessionContextType {
     email: string,
     password: string,
     name?: string
-  ) => Promise<{ error?: string }>;
+  ) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
   switchOrganization: (organizationId: string) => Promise<{ error?: string }>;
   refreshSession: () => Promise<void>;
@@ -143,31 +149,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       email: string,
       password: string,
       name?: string
-    ): Promise<{ error?: string }> => {
+    ): Promise<SignUpResult> => {
       try {
         const response = await api.post<{
-          accessToken: string;
-          tokenType: string;
+          message: string;
+          email: string;
         }>("/auth/register", { email, name: name || email.split("@")[0], password });
 
         if (response.error) {
           return { error: response.error };
         }
 
-        if (response.data?.accessToken) {
-          // Salvar token JWT no localStorage
-          setToken(response.data.accessToken);
-          // Carregar dados do usuário
-          await loadSession();
-        }
-
-        return {};
+        // Registro bem-sucedido - precisa verificar email
+        return {
+          needsVerification: true,
+          email: response.data?.email || email,
+        };
       } catch (error) {
         console.error("Sign up error:", error);
         return { error: "Erro ao conectar com o servidor" };
       }
     },
-    [loadSession]
+    []
   );
 
   const signOut = useCallback(async () => {

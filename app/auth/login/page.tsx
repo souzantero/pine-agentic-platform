@@ -63,6 +63,16 @@ export default function LoginPage() {
             {error && (
               <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-950/50 rounded-md">
                 {error}
+                {error.toLowerCase().includes("nao verificado") && email && (
+                  <div className="mt-2">
+                    <Link
+                      href={`/auth/verify-pending?email=${encodeURIComponent(email)}`}
+                      className="text-primary hover:underline"
+                    >
+                      Reenviar email de verificacao
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
             <div className="space-y-2">
