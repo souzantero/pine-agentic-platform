@@ -124,6 +124,10 @@ class User(SQLModel, table=True):
     email_verification_token_expires_at: datetime | None = Field(default=None)
     last_verification_email_sent_at: datetime | None = Field(default=None)
 
+    # Campos de reset de senha
+    password_reset_token: str | None = Field(default=None, index=True)
+    password_reset_token_expires_at: datetime | None = Field(default=None)
+
     created_at: datetime = Field(default_factory=get_now)
     updated_at: datetime = Field(default_factory=get_now, sa_column_kwargs={"onupdate": get_now})
 

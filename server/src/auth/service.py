@@ -6,22 +6,27 @@ import jwt
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
-from src.core.email import send_verification_email
+import re
+
+from src.core.email import send_password_reset_email, send_verification_email
 from src.core.env import (
     email_verification_rate_limit_seconds,
     email_verification_token_expiration_hours,
     jwt_algorithm,
     jwt_expiration_hours,
     jwt_secret,
+    password_reset_token_expiration_hours,
 )
 from src.database.entities import OrganizationMember, RolePermission, User
 from src.organization.schemas import OrganizationResponse
 
 from .schemas import (
+    ChangePasswordRequest,
     LoginRequest,
     MembershipResponse,
     MembershipRoleResponse,
     MeResponse,
+    MessageResponse,
     RegisterRequest,
     RegisterResponse,
     ResendVerificationResponse,
@@ -42,6 +47,30 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     password_bytes = plain_password.encode("utf-8")
     hashed_bytes = hashed_password.encode("utf-8")
     return bcrypt.checkpw(password_bytes, hashed_bytes)
+
+
+def validate_password_strength(password: str) -> None:
+    """
+    Valida a forca da senha.
+    Requisitos: minimo 8 caracteres, pelo menos 1 numero e 1 simbolo.
+    Lanca HTTPException se a senha for fraca.
+    """
+    errors = []
+
+    if len(password) < 8:
+        errors.append("minimo 8 caracteres")
+
+    if not re.search(r"\d", password):
+        errors.append("pelo menos 1 numero")
+
+    if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?~`]", password):
+        errors.append("pelo menos 1 simbolo (!@#$%^&*...)")
+
+    if errors:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Senha fraca: {', '.join(errors)}",
+        )
 
 
 def generate_verification_token() -> str:
@@ -71,6 +100,9 @@ def create_access_token(user_id: str, expires_delta: timedelta | None = None) ->
 
 def register_user(payload: RegisterRequest, db: Session) -> RegisterResponse:
     """Registra um novo usuario e envia email de verificacao."""
+    # Validar forca da senha
+    validate_password_strength(payload.password)
+
     # Verifica se email ja existe
     statement = select(User).where(User.email == payload.email)
     existing_user = db.exec(statement).first()
@@ -263,3 +295,95 @@ def resend_verification_email(email: str, db: Session) -> ResendVerificationResp
     send_verification_email(user.email, user.name, verification_token)
 
     return ResendVerificationResponse(message=generic_message)
+
+
+def change_password(
+    user: User, payload: ChangePasswordRequest, db: Session
+) -> MessageResponse:
+    """Altera a senha do usuario autenticado."""
+    # Verificar senha atual
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Senha atual incorreta",
+        )
+
+    # Validar nova senha
+    validate_password_strength(payload.new_password)
+
+    # Verificar se nova senha e diferente da atual
+    if payload.current_password == payload.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A nova senha deve ser diferente da atual",
+        )
+
+    # Atualizar senha
+    user.password_hash = hash_password(payload.new_password)
+    db.add(user)
+    db.commit()
+
+    return MessageResponse(message="Senha alterada com sucesso")
+
+
+def forgot_password(email: str, db: Session) -> MessageResponse:
+    """Envia email de recuperacao de senha."""
+    statement = select(User).where(User.email == email)
+    user = db.exec(statement).first()
+
+    # Mensagem generica para nao revelar se email existe
+    generic_message = "Se este email estiver cadastrado, enviaremos um link para redefinir sua senha."
+
+    if not user:
+        return MessageResponse(message=generic_message)
+
+    # Gerar token de reset
+    reset_token = generate_verification_token()
+    user.password_reset_token = reset_token
+    user.password_reset_token_expires_at = datetime.now(UTC) + timedelta(
+        hours=password_reset_token_expiration_hours
+    )
+    db.add(user)
+    db.commit()
+
+    # Enviar email
+    send_password_reset_email(user.email, user.name, reset_token)
+
+    return MessageResponse(message=generic_message)
+
+
+def reset_password(token: str, new_password: str, db: Session) -> MessageResponse:
+    """Redefine a senha usando o token de recuperacao."""
+    statement = select(User).where(User.password_reset_token == token)
+    user = db.exec(statement).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token de recuperacao invalido",
+        )
+
+    # Verificar se token expirou
+    now = datetime.now(UTC)
+    expires_at = user.password_reset_token_expires_at
+    if expires_at:
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+
+        if expires_at < now:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Token de recuperacao expirado. Solicite um novo.",
+            )
+
+    # Validar nova senha
+    validate_password_strength(new_password)
+
+    # Atualizar senha e limpar token
+    user.password_hash = hash_password(new_password)
+    user.password_reset_token = None
+    user.password_reset_token_expires_at = None
+    db.add(user)
+    db.commit()
+
+    return MessageResponse(message="Senha redefinida com sucesso")

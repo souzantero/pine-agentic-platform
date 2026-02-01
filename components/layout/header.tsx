@@ -7,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -22,7 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/session";
 import { OrgSwitcher } from "./org-switcher";
-import { LogOut, Menu, Settings } from "lucide-react";
+import { LogOut, Menu, Settings, User } from "lucide-react";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -99,6 +100,14 @@ export function Header({ onMenuClick, onSettingsClick, showSettingsButton }: Hea
                 <div className="text-xs text-muted-foreground">{user.email}</div>
               </div>
             )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => router.push("/chat/account")}
+              className="cursor-pointer"
+            >
+              <User className="mr-2 h-4 w-4" />
+              Minha Conta
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setShowLogoutDialog(true)}
               disabled={loggingOut}

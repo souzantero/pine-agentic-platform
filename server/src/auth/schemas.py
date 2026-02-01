@@ -88,3 +88,34 @@ class ResendVerificationResponse(CamelCaseModel):
 
     message: str
 
+
+# =============================================================================
+# Password Schemas
+# =============================================================================
+
+
+class ChangePasswordRequest(CamelCaseModel):
+    """Request para alterar senha (usuario autenticado)"""
+
+    current_password: str
+    new_password: str
+
+
+class ForgotPasswordRequest(CamelCaseModel):
+    """Request para solicitar recuperacao de senha"""
+
+    email: EmailStr
+
+
+class ResetPasswordRequest(CamelCaseModel):
+    """Request para redefinir senha com token"""
+
+    token: str
+    new_password: str
+
+
+class MessageResponse(CamelCaseModel):
+    """Resposta generica com mensagem"""
+
+    message: str
+

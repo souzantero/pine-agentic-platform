@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "@/lib/session";
+import { validatePassword } from "@/lib/password";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PasswordStrength } from "@/components/ui/password-strength";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -33,10 +35,18 @@ export default function SignupPage() {
     }
   }, [isLoading, isLoggedIn, hasOrganization, router]);
 
+  const validation = validatePassword(password);
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    if (!validation.isValid) {
+      setError("A senha nao atende aos requisitos minimos");
+      setLoading(false);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("As senhas nao coincidem");
@@ -111,6 +121,7 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <PasswordStrength password={password} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmar senha</Label>
@@ -125,7 +136,7 @@ export default function SignupPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4 pt-6">
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || !validation.isValid}>
               {loading ? "Cadastrando..." : "Cadastrar"}
             </Button>
             <p className="text-sm text-muted-foreground text-center">
