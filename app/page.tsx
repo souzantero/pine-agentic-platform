@@ -551,12 +551,12 @@ export default function LandingPage() {
               <h4 className="font-semibold">Legal</h4>
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p>
-                  <Link href="#" className="hover:text-foreground transition-colors">
+                  <Link href="/privacy" className="hover:text-foreground transition-colors">
                     Política de Privacidade
                   </Link>
                 </p>
                 <p>
-                  <Link href="#" className="hover:text-foreground transition-colors">
+                  <Link href="/terms" className="hover:text-foreground transition-colors">
                     Termos de Uso
                   </Link>
                 </p>
