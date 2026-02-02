@@ -23,7 +23,7 @@ export default function PrivacyPage() {
 
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-6">
           <p className="text-muted-foreground">
-            Última atualização: Janeiro de 2025
+            Última atualização: Fevereiro de 2025
           </p>
 
           <section className="space-y-4">
@@ -61,6 +61,13 @@ export default function PrivacyPage() {
                 <strong>Dados técnicos:</strong> informações coletadas
                 automaticamente pelos servidores durante o acesso à plataforma.
               </li>
+              <li>
+                <strong>Dados de pagamento:</strong> para planos pagos, os dados
+                de pagamento (cartão de crédito, endereço de cobrança) são
+                coletados e processados diretamente pelo Stripe, nosso
+                processador de pagamentos. A Pine Software NÃO armazena dados
+                completos de cartão de crédito em seus servidores.
+              </li>
             </ul>
           </section>
 
@@ -93,6 +100,21 @@ export default function PrivacyPage() {
               <li>
                 <strong>Provedores de infraestrutura:</strong> utilizamos serviços
                 de nuvem para hospedar e processar dados.
+              </li>
+              <li>
+                <strong>Processador de pagamentos:</strong> utilizamos o Stripe
+                para processar pagamentos de planos pagos. Ao realizar uma
+                assinatura, seus dados de pagamento são enviados diretamente ao
+                Stripe e estão sujeitos à{" "}
+                <a
+                  href="https://stripe.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Política de Privacidade do Stripe
+                </a>
+                .
               </li>
               <li>
                 <strong>Obrigações legais:</strong> quando exigido por lei ou

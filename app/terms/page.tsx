@@ -23,7 +23,7 @@ export default function TermsPage() {
 
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-6">
           <p className="text-muted-foreground">
-            Última atualização: Janeiro de 2025
+            Última atualização: Fevereiro de 2025
           </p>
 
           <section className="space-y-4">
@@ -104,7 +104,98 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">7. Disponibilidade</h2>
+            <h2 className="text-xl font-semibold">7. Planos e Preços</h2>
+            <p>
+              O PineAI oferece diferentes planos de assinatura:
+            </p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>
+                <strong>Free:</strong> Gratuito, com limites de uso (1 membro,
+                1 coleção, 50 conversas, 200 chamadas de ferramentas/mês, 100MB
+                de armazenamento).
+              </li>
+              <li>
+                <strong>Team:</strong> $29/mês, com limites expandidos (10 membros,
+                coleções e conversas ilimitadas, chamadas de ferramentas ilimitadas,
+                5GB de armazenamento).
+              </li>
+              <li>
+                <strong>Enterprise:</strong> Preço personalizado, para grandes
+                organizações com necessidades específicas.
+              </li>
+            </ul>
+            <p>
+              Os limites e preços podem ser alterados mediante aviso prévio de
+              30 dias. Usuários ativos serão notificados por e-mail sobre
+              qualquer alteração.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">8. Pagamento e Cobrança</h2>
+            <p>
+              Para planos pagos, as seguintes condições se aplicam:
+            </p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>
+                <strong>Ciclo de cobrança:</strong> A cobrança é mensal, realizada
+                na data de contratação do plano.
+              </li>
+              <li>
+                <strong>Renovação automática:</strong> Assinaturas são renovadas
+                automaticamente a cada mês até o cancelamento.
+              </li>
+              <li>
+                <strong>Processamento de pagamento:</strong> Os pagamentos são
+                processados pelo Stripe, um provedor terceiro de pagamentos.
+                Ao fornecer dados de pagamento, você concorda com os{" "}
+                <a
+                  href="https://stripe.com/legal"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Termos de Serviço do Stripe
+                </a>
+                .
+              </li>
+              <li>
+                <strong>Falha no pagamento:</strong> Em caso de falha na cobrança,
+                tentaremos novamente nos dias seguintes. Após falhas repetidas,
+                o plano pode ser rebaixado para Free.
+              </li>
+            </ul>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">9. Cancelamento e Reembolso</h2>
+            <p>
+              Você pode cancelar sua assinatura a qualquer momento através das
+              configurações de billing da plataforma ou entrando em contato
+              conosco. Ao cancelar:
+            </p>
+            <ul className="list-disc pl-6 space-y-2">
+              <li>
+                Você manterá acesso ao plano pago até o final do período já pago.
+              </li>
+              <li>
+                Após o término do período, sua organização será rebaixada para
+                o plano Free.
+              </li>
+              <li>
+                Não oferecemos reembolso proporcional por dias não utilizados,
+                exceto em casos excepcionais a nosso critério.
+              </li>
+            </ul>
+            <p>
+              Se você exceder os limites do plano Free após o rebaixamento,
+              algumas funcionalidades podem ficar indisponíveis até que você
+              faça upgrade ou remova o excedente.
+            </p>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">10. Disponibilidade</h2>
             <p>
               Nos esforçamos para manter o PineAI disponível, mas não garantimos
               funcionamento ininterrupto. Podemos realizar manutenções programadas
@@ -113,7 +204,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">8. Limitação de Responsabilidade</h2>
+            <h2 className="text-xl font-semibold">11. Limitação de Responsabilidade</h2>
             <p>
               O PineAI é fornecido &quot;como está&quot;. Na máxima extensão permitida
               por lei, não nos responsabilizamos por:
@@ -126,7 +217,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">9. Propriedade Intelectual</h2>
+            <h2 className="text-xl font-semibold">12. Propriedade Intelectual</h2>
             <p>
               O PineAI, incluindo software, design, marcas e conteúdo, é
               propriedade da Pine Software e protegido por leis de propriedade
@@ -136,7 +227,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">10. Cancelamento</h2>
+            <h2 className="text-xl font-semibold">13. Encerramento de Conta</h2>
             <p>
               Para cancelar sua conta, entre em contato pelo e-mail{" "}
               <a
@@ -151,7 +242,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">11. Alterações nos Termos</h2>
+            <h2 className="text-xl font-semibold">14. Alterações nos Termos</h2>
             <p>
               Podemos modificar estes termos a qualquer momento. Recomendamos
               que você revise esta página regularmente. O uso continuado da
@@ -160,7 +251,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">12. Legislação Aplicável</h2>
+            <h2 className="text-xl font-semibold">15. Legislação Aplicável</h2>
             <p>
               Estes termos são regidos pelas leis brasileiras. Qualquer disputa
               será resolvida no foro da comarca de Curitiba/PR.
@@ -168,7 +259,7 @@ export default function TermsPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">13. Contato</h2>
+            <h2 className="text-xl font-semibold">16. Contato</h2>
             <p>
               Para dúvidas sobre estes termos, entre em contato:
             </p>
