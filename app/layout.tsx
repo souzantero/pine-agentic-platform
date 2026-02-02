@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Pineai",
   description: "Plataforma de agentes de IA",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
