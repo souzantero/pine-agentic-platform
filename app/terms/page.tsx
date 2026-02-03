@@ -232,10 +232,10 @@ export default function TermsPage() {
             <p>
               Para cancelar sua conta, entre em contato pelo e-mail{" "}
               <a
-                href="mailto:contato@pine.net.br"
+                href="mailto:ai@pine.net.br"
                 className="text-primary hover:underline"
               >
-                contato@pine.net.br
+                ai@pine.net.br
               </a>
               . Podemos suspender ou encerrar seu acesso por violação destes
               termos, mediante aviso prévio quando possível.
@@ -268,10 +268,10 @@ export default function TermsPage() {
               <li>
                 <strong>E-mail:</strong>{" "}
                 <a
-                  href="mailto:contato@pine.net.br"
+                  href="mailto:ai@pine.net.br"
                   className="text-primary hover:underline"
                 >
-                  contato@pine.net.br
+                  ai@pine.net.br
                 </a>
               </li>
               <li>

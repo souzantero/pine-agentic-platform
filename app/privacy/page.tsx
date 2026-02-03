@@ -153,10 +153,10 @@ export default function PrivacyPage() {
             <p>
               Para exercer seus direitos, entre em contato pelo e-mail{" "}
               <a
-                href="mailto:contato@pine.net.br"
+                href="mailto:ai@pine.net.br"
                 className="text-primary hover:underline"
               >
-                contato@pine.net.br
+                ai@pine.net.br
               </a>
               .
             </p>
@@ -169,10 +169,10 @@ export default function PrivacyPage() {
               necessário para fornecer os serviços. Para solicitar a exclusão
               dos seus dados, entre em contato pelo e-mail{" "}
               <a
-                href="mailto:contato@pine.net.br"
+                href="mailto:ai@pine.net.br"
                 className="text-primary hover:underline"
               >
-                contato@pine.net.br
+                ai@pine.net.br
               </a>
               .
             </p>
@@ -197,10 +197,10 @@ export default function PrivacyPage() {
               <li>
                 <strong>E-mail:</strong>{" "}
                 <a
-                  href="mailto:contato@pine.net.br"
+                  href="mailto:ai@pine.net.br"
                   className="text-primary hover:underline"
                 >
-                  contato@pine.net.br
+                  ai@pine.net.br
                 </a>
               </li>
               <li>

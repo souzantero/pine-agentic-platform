@@ -37,9 +37,12 @@ export function validatePassword(password: string): PasswordValidation {
   if (!checks.hasSymbol) {
     errors.push("Pelo menos 1 símbolo (!@#$%^&*...)");
   }
+  if (!checks.hasUppercase) {
+    errors.push("Pelo menos 1 letra maiúscula");
+  }
 
-  // Requisitos obrigatorios: minLength, hasNumber, hasSymbol
-  const isValid = checks.minLength && checks.hasNumber && checks.hasSymbol;
+  // Requisitos obrigatorios: minLength, hasNumber, hasSymbol, hasUppercase
+  const isValid = checks.minLength && checks.hasNumber && checks.hasSymbol && checks.hasUppercase;
 
   // Calcular forca da senha
   const passedChecks = Object.values(checks).filter(Boolean).length;

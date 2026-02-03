@@ -469,7 +469,7 @@ function BillingContent() {
                   </li>
                 </ul>
                 <a
-                  href="mailto:contato@pine.net.br"
+                  href="mailto:ai@pine.net.br"
                   className="mt-4 block text-center text-sm text-primary hover:underline"
                 >
                   Falar com vendas

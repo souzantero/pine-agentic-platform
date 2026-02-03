@@ -37,7 +37,8 @@ export default function Home() {
   } = useModels();
 
   // Hooks para verificar tools disponíveis
-  const { getConfig } = useConfigs("TOOL");
+  const { getConfig: getToolConfig } = useConfigs("TOOL");
+  const { getConfig: getFeatureConfig } = useConfigs("FEATURE");
   const { getProvidersByType } = useProviders();
 
   // Calcula quais tools estão disponíveis baseado nas configurações e provedores
@@ -45,27 +46,28 @@ export default function Home() {
     const tools: ToolKey[] = [];
 
     // WEB_SEARCH: precisa de config habilitada + provider WEB_SEARCH configurado
-    const webSearchConfig = getConfig("TOOL", "WEB_SEARCH");
+    const webSearchConfig = getToolConfig("TOOL", "WEB_SEARCH");
     const hasWebSearchProvider = getProvidersByType("WEB_SEARCH").length > 0;
     if (webSearchConfig?.isEnabled && hasWebSearchProvider) {
       tools.push("WEB_SEARCH");
     }
 
     // WEB_FETCH: precisa de config habilitada + provider WEB_SEARCH configurado (usa Tavily)
-    const webFetchConfig = getConfig("TOOL", "WEB_FETCH");
+    const webFetchConfig = getToolConfig("TOOL", "WEB_FETCH");
     if (webFetchConfig?.isEnabled && hasWebSearchProvider) {
       tools.push("WEB_FETCH");
     }
 
     // KNOWLEDGE: precisa de config habilitada + provider EMBEDDING configurado
-    const knowledgeConfig = getConfig("TOOL", "KNOWLEDGE");
+    // Nota: KNOWLEDGE usa config FEATURE pois tem pagina de configuracao separada
+    const knowledgeConfig = getFeatureConfig("FEATURE", "KNOWLEDGE");
     const hasEmbeddingProvider = getProvidersByType("EMBEDDING").length > 0;
     if (knowledgeConfig?.isEnabled && hasEmbeddingProvider) {
       tools.push("KNOWLEDGE");
     }
 
     return tools;
-  }, [getConfig, getProvidersByType]);
+  }, [getToolConfig, getFeatureConfig, getProvidersByType]);
 
   // Estados de UI
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

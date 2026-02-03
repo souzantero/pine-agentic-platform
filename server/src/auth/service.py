@@ -52,7 +52,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def validate_password_strength(password: str) -> None:
     """
     Valida a forca da senha.
-    Requisitos: minimo 8 caracteres, pelo menos 1 numero e 1 simbolo.
+    Requisitos: minimo 8 caracteres, pelo menos 1 numero, 1 simbolo e 1 letra maiuscula.
     Lanca HTTPException se a senha for fraca.
     """
     errors = []
@@ -65,6 +65,9 @@ def validate_password_strength(password: str) -> None:
 
     if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?~`]", password):
         errors.append("pelo menos 1 símbolo (!@#$%^&*...)")
+
+    if not re.search(r"[A-Z]", password):
+        errors.append("pelo menos 1 letra maiúscula")
 
     if errors:
         raise HTTPException(

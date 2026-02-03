@@ -25,6 +25,7 @@ export function PasswordStrength({ password, className }: PasswordStrengthProps)
     { key: "minLength", label: "Mínimo 8 caracteres", met: validation.checks.minLength },
     { key: "hasNumber", label: "Pelo menos 1 número", met: validation.checks.hasNumber },
     { key: "hasSymbol", label: "Pelo menos 1 símbolo", met: validation.checks.hasSymbol },
+    { key: "hasUppercase", label: "Pelo menos 1 letra maiúscula", met: validation.checks.hasUppercase },
   ];
 
   return (

@@ -1,4 +1,4 @@
-"""Servico de email usando Resend"""
+"""Serviço de email usando Resend"""
 
 import resend
 
@@ -7,14 +7,14 @@ from src.core.env import resend_api_key, resend_from_email, app_url
 
 def send_verification_email(to_email: str, name: str, token: str) -> bool:
     """
-    Envia email de verificacao para o usuario.
-    Retorna True se enviado com sucesso, False caso contrario.
+    Envia email de verificação para o usuário.
+    Retorna True se enviado com sucesso, False caso contrário.
     """
     verification_link = f"{app_url}/auth/verify-email?token={token}"
 
     # Em desenvolvimento sem API key, apenas loga o link
     if not resend_api_key:
-        print(f"[DEV] Email de verificacao para {to_email}")
+        print(f"[DEV] Email de verificação para {to_email}")
         print(f"[DEV] Link: {verification_link}")
         return True
 
@@ -31,14 +31,14 @@ def send_verification_email(to_email: str, name: str, token: str) -> bool:
         )
         return True
     except Exception as e:
-        print(f"Erro ao enviar email de verificacao: {e}")
+        print(f"Erro ao enviar email de verificação: {e}")
         return False
 
 
 def send_password_reset_email(to_email: str, name: str, token: str) -> bool:
     """
-    Envia email de recuperacao de senha.
-    Retorna True se enviado com sucesso, False caso contrario.
+    Envia email de recuperação de senha.
+    Retorna True se enviado com sucesso, False caso contrário.
     """
     reset_link = f"{app_url}/auth/reset-password?token={token}"
 
@@ -55,7 +55,7 @@ def send_password_reset_email(to_email: str, name: str, token: str) -> bool:
             {
                 "from": resend_from_email,
                 "to": to_email,
-                "subject": "Recuperacao de senha - Pineai",
+                "subject": "Recuperação de senha - Pineai",
                 "html": _get_password_reset_email_html(name, reset_link),
             }
         )
@@ -66,7 +66,7 @@ def send_password_reset_email(to_email: str, name: str, token: str) -> bool:
 
 
 def _get_password_reset_email_html(name: str, reset_link: str) -> str:
-    """Retorna o HTML do email de recuperacao de senha."""
+    """Retorna o HTML do email de recuperação de senha."""
     return f"""
 <!DOCTYPE html>
 <html>
@@ -78,10 +78,10 @@ def _get_password_reset_email_html(name: str, reset_link: str) -> str:
     <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <div style="background-color: white; border-radius: 8px; padding: 40px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
             <h1 style="color: #18181b; font-size: 24px; font-weight: 600; margin: 0 0 8px 0;">
-                Recuperacao de Senha
+                Recuperação de Senha
             </h1>
             <p style="color: #71717a; font-size: 16px; line-height: 1.5; margin: 0 0 24px 0;">
-                Ola {name}, recebemos uma solicitacao para redefinir sua senha. Clique no botao abaixo para criar uma nova senha:
+                Olá {name}, recebemos uma solicitação para redefinir sua senha. Clique no botão abaixo para criar uma nova senha:
             </p>
             <div style="text-align: center; margin: 32px 0;">
                 <a href="{reset_link}"
@@ -98,12 +98,12 @@ def _get_password_reset_email_html(name: str, reset_link: str) -> str:
             </p>
             <div style="border-top: 1px solid #e4e4e7; margin-top: 32px; padding-top: 24px;">
                 <p style="color: #a1a1aa; font-size: 12px; margin: 0;">
-                    Este link expira em 1 hora. Se voce nao solicitou a recuperacao de senha, ignore este email.
+                    Este link expira em 1 hora. Se você não solicitou a recuperação de senha, ignore este email.
                 </p>
             </div>
         </div>
         <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin-top: 24px;">
-            Pineai - Inteligencia Artificial para sua empresa
+            Pineai - Inteligência Artificial para sua empresa
         </p>
     </div>
 </body>
@@ -112,7 +112,7 @@ def _get_password_reset_email_html(name: str, reset_link: str) -> str:
 
 
 def _get_verification_email_html(name: str, verification_link: str) -> str:
-    """Retorna o HTML do email de verificacao."""
+    """Retorna o HTML do email de verificação."""
     return f"""
 <!DOCTYPE html>
 <html>
@@ -127,7 +127,7 @@ def _get_verification_email_html(name: str, verification_link: str) -> str:
                 Bem-vindo ao Pineai, {name}!
             </h1>
             <p style="color: #71717a; font-size: 16px; line-height: 1.5; margin: 0 0 24px 0;">
-                Para completar seu cadastro, clique no botao abaixo para verificar seu email:
+                Para completar seu cadastro, clique no botão abaixo para verificar seu email:
             </p>
             <div style="text-align: center; margin: 32px 0;">
                 <a href="{verification_link}"
@@ -144,12 +144,12 @@ def _get_verification_email_html(name: str, verification_link: str) -> str:
             </p>
             <div style="border-top: 1px solid #e4e4e7; margin-top: 32px; padding-top: 24px;">
                 <p style="color: #a1a1aa; font-size: 12px; margin: 0;">
-                    Este link expira em 24 horas. Se voce nao criou uma conta no Pineai, ignore este email.
+                    Este link expira em 24 horas. Se você não criou uma conta no Pineai, ignore este email.
                 </p>
             </div>
         </div>
         <p style="color: #a1a1aa; font-size: 12px; text-align: center; margin-top: 24px;">
-            Pineai - Inteligencia Artificial para sua empresa
+            Pineai - Inteligência Artificial para sua empresa
         </p>
     </div>
 </body>

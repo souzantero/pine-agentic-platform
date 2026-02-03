@@ -633,7 +633,7 @@ export default function LandingPage() {
                 </li>
               </ul>
               <Button variant="outline" size="lg" className="w-full" asChild>
-                <a href="mailto:contato@pine.net.br">Falar com vendas</a>
+                <a href="mailto:ai@pine.net.br">Falar com vendas</a>
               </Button>
             </div>
           </div>
@@ -679,10 +679,10 @@ export default function LandingPage() {
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p>
                   <a
-                    href="mailto:contato@pine.net.br"
+                    href="mailto:ai@pine.net.br"
                     className="hover:text-foreground transition-colors"
                   >
-                    contato@pine.net.br
+                    ai@pine.net.br
                   </a>
                 </p>
                 <p>Av. Sete de Setembro, 6556</p>
