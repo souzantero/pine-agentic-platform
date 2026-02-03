@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from src.billing.limits import check_member_limit
+from src.core.env import app_url
 from src.database.entities import Organization, OrganizationInvite, OrganizationMember, Role
 from src.organization.schemas import OrganizationResponse
 from src.roles.schemas import RoleResponse
@@ -30,8 +31,7 @@ def generate_invite_token() -> str:
 
 def get_invite_link(token: str) -> str:
     """Gera o link completo do convite."""
-    # TODO: usar variavel de ambiente para URL base
-    return f"http://localhost:3000/invite/{token}"
+    return f"{app_url}/invite/{token}"
 
 
 def list_invites(organization_id: uuid.UUID, db: Session) -> List[InviteListItemResponse]:
