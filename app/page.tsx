@@ -26,9 +26,9 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-              Agentes de IA para
+              Seus dados, seus sistemas
               <br />
-              <span className="text-primary">sua empresa</span>
+              <span className="text-primary">sua IA</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Automatize tarefas, acelere decisões e potencialize sua equipe com
