@@ -677,7 +677,7 @@ export default function LandingPage() {
             <div className="space-y-4">
               <Logo size="md" />
               <p className="text-sm text-muted-foreground">
-                Plataforma de agentes de IA para empresas.
+                Seus dados, seus sistemas, sua IA.
               </p>
             </div>
 
