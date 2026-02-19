@@ -45,7 +45,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* 1. Hero Section */}
       <section className="py-24 md:py-32">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-8">
@@ -78,7 +78,223 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Benefício - Adeus ao trabalho manual */}
+      {/* 2. A Nova Ordem de Eficiência */}
+      <section className="py-24 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-16 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mx-auto">
+                <Zap className="h-4 w-4" />
+                A Nova Ordem de Eficiência
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold">
+                A IA não vai simplesmente ajudar sua equipe.
+                <br />
+                <span className="text-primary">Ela vai redesenhar quem sobrevive no seu mercado.</span>
+              </h2>
+            </div>
+
+            {/* O Gancho */}
+            <div className="max-w-3xl mx-auto space-y-8 mb-20">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Você já percebeu que a estrutura de um escritório hoje é
+                praticamente a mesma de 20 anos atrás? Setores inchados, processos
+                lentos e informações presas em cabeças ou pastas.{" "}
+                <strong className="text-foreground">
+                  O mundo mudou, mas a sua estrutura de custos e produtividade
+                  continua &quot;quadradinha&quot;.
+                </strong>
+              </p>
+
+              {/* A Provocação */}
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Enquanto uma empresa tradicional precisa de 10 pessoas para rodar
+                um processo, o seu concorrente que já entendeu o jogo vai rodar o
+                mesmo processo com{" "}
+                <strong className="text-foreground">
+                  apenas uma pessoa orquestrando assistentes digitais
+                </strong>
+                . Ele vai ser mais rápido, mais barato e mais preciso. Agora imagine
+                essas mesmas 10 pessoas, cada uma orquestrando seus próprios
+                assistentes — o resultado não é 10x.{" "}
+                <strong className="text-foreground">É 50x</strong>. Isso não é sobre
+                reduzir equipes. É sobre aperfeiçoar cada profissional que você já tem.
+              </p>
+            </div>
+
+            {/* Visual comparativo: Modelo Tradicional vs Modelo Pineai */}
+            <div className="grid md:grid-cols-2 gap-6 mb-20 max-w-4xl mx-auto">
+              <div className="bg-background border border-dashed rounded-2xl p-8 space-y-5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Modelo Tradicional
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex -space-x-2">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div key={i} className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
+                          <User className="h-3.5 w-3.5 text-muted-foreground/50" />
+                        </div>
+                      ))}
+                    </div>
+                    <span className="text-sm text-muted-foreground">5 pessoas</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-muted-foreground/50" />
+                    <span className="text-sm text-muted-foreground">5 dias</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-red-500/70">Sujeito a erro humano</span>
+                  </div>
+                </div>
+                <div className="pt-4 border-t">
+                  <p className="text-2xl font-bold text-muted-foreground">1 tarefa</p>
+                </div>
+              </div>
+
+              <div className="bg-background border-2 border-primary rounded-2xl p-8 space-y-5 relative">
+                <div className="absolute -top-3 right-6">
+                  <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
+                    Seu concorrente já faz isso
+                  </span>
+                </div>
+                <p className="text-xs font-medium text-primary uppercase tracking-wider">
+                  Modelo Pineai
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center">
+                      <User className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <span className="text-sm">1 orquestrador + assistentes de IA</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Zap className="h-5 w-5 text-primary" />
+                    <span className="text-sm">5 minutos</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-primary">Precisão baseada em dados reais</span>
+                  </div>
+                </div>
+                <div className="pt-4 border-t">
+                  <p className="text-2xl font-bold">1 tarefa</p>
+                </div>
+              </div>
+            </div>
+
+            {/* A Solução + Fechamento */}
+            <div className="max-w-3xl mx-auto space-y-6">
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                <strong className="text-foreground">A Pineai não vende software.</strong>{" "}
+                Nós entramos na sua operação, mapeamos seus processos e instalamos
+                um cérebro digital privado. Nós transformamos seus colaboradores
+                atuais nos orquestradores dessa inteligência. Colocamos a IA no
+                núcleo da sua empresa para que{" "}
+                <strong className="text-foreground">
+                  você seja quem dita o ritmo do mercado
+                </strong>
+                , e não quem tenta correr atrás dele.
+              </p>
+              <p className="text-lg font-semibold text-foreground">
+                Nós não queremos te vender uma ferramenta. Queremos te mostrar
+                como a sua empresa vai operar daqui a 2 anos.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Cérebro Digital / Conhecimento Vivo */}
+      <section className="py-24">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div className="relative order-2 lg:order-1">
+                <div className="bg-background border rounded-xl p-6 shadow-lg space-y-5">
+                  <div className="flex items-start gap-3">
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                      <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="bg-muted rounded-lg px-4 py-3">
+                      <p className="text-sm">
+                        Qual o prazo de garantia do produto X para o cliente Y?
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 justify-end">
+                    <div className="bg-primary/10 rounded-lg px-4 py-3">
+                      <p className="text-sm">
+                        De acordo com o contrato firmado em 15/03/2025, o produto
+                        X possui garantia de 24 meses para o cliente Y, com
+                        cobertura total de peças e mão de obra.
+                      </p>
+                    </div>
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute -bottom-4 -left-4 bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium shadow-lg">
+                  Resposta em segundos
+                </div>
+              </div>
+
+              <div className="space-y-6 order-1 lg:order-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                  <Search className="h-4 w-4" />
+                  Cérebro Digital
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold">
+                  Conhecimento vivo,
+                  <br />
+                  respostas na hora
+                </h2>
+                <p className="text-lg text-muted-foreground">
+                  Chega de procurar informações em manuais de 200 páginas ou
+                  planilhas infinitas. Pergunte e receba a resposta exata na hora,
+                  com base nos documentos reais da sua empresa.
+                </p>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <BadgeCheck className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-muted-foreground">
+                      Respostas precisas citando a fonte original
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <BadgeCheck className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-muted-foreground">
+                      Entende contratos, manuais, planilhas e relatórios
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <BadgeCheck className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-muted-foreground">
+                      Disponível 24/7 para toda a equipe
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <BadgeCheck className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="text-muted-foreground">
+                      O conhecimento da empresa nunca mais se perde
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Adeus ao Trabalho Manual / Sincronização */}
       <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
@@ -174,98 +390,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Benefício - Conhecimento Vivo */}
+      {/* 5. Privacidade Total / Instalação Privada */}
       <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="relative order-2 lg:order-1">
-                <div className="bg-background border rounded-xl p-6 shadow-lg space-y-5">
-                  <div className="flex items-start gap-3">
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                      <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="bg-muted rounded-lg px-4 py-3">
-                      <p className="text-sm">
-                        Qual o prazo de garantia do produto X para o cliente Y?
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 justify-end">
-                    <div className="bg-primary/10 rounded-lg px-4 py-3">
-                      <p className="text-sm">
-                        De acordo com o contrato firmado em 15/03/2025, o produto
-                        X possui garantia de 24 meses para o cliente Y, com
-                        cobertura total de peças e mão de obra.
-                      </p>
-                    </div>
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <BookOpen className="h-4 w-4 text-primary" />
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute -bottom-4 -left-4 bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium shadow-lg">
-                  Resposta em segundos
-                </div>
-              </div>
-
-              <div className="space-y-6 order-1 lg:order-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                  <Search className="h-4 w-4" />
-                  Cérebro Digital
-                </div>
-                <h2 className="text-3xl md:text-4xl font-bold">
-                  Conhecimento vivo,
-                  <br />
-                  respostas na hora
-                </h2>
-                <p className="text-lg text-muted-foreground">
-                  Chega de procurar informações em manuais de 200 páginas ou
-                  planilhas infinitas. Pergunte e receba a resposta exata na hora,
-                  com base nos documentos reais da sua empresa.
-                </p>
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-3">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <BadgeCheck className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-muted-foreground">
-                      Respostas precisas citando a fonte original
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <BadgeCheck className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-muted-foreground">
-                      Entende contratos, manuais, planilhas e relatórios
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <BadgeCheck className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-muted-foreground">
-                      Disponível 24/7 para toda a equipe
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <BadgeCheck className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="text-muted-foreground">
-                      O conhecimento da empresa nunca mais se perde
-                    </span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefício - Privacidade Total */}
-      <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="max-w-5xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -359,134 +485,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* A Nova Ordem de Eficiência */}
-      <section className="py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-16 space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mx-auto">
-                <Zap className="h-4 w-4" />
-                A Nova Ordem de Eficiência
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold">
-                A IA não vai simplesmente ajudar sua equipe.
-                <br />
-                <span className="text-primary">Ela vai redesenhar quem sobrevive no seu mercado.</span>
-              </h2>
-            </div>
-
-            {/* O Gancho */}
-            <div className="max-w-3xl mx-auto space-y-8 mb-20">
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Você já percebeu que a estrutura de um escritório hoje é
-                praticamente a mesma de 20 anos atrás? Setores inchados, processos
-                lentos e informações presas em cabeças ou pastas.{" "}
-                <strong className="text-foreground">
-                  O mundo mudou, mas a sua estrutura de custos e produtividade
-                  continua &quot;quadradinha&quot;.
-                </strong>
-              </p>
-
-              {/* A Provocação */}
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Enquanto uma empresa tradicional precisa de 10 pessoas para rodar
-                um processo, o seu concorrente que já entendeu o jogo vai rodar o
-                mesmo processo com{" "}
-                <strong className="text-foreground">
-                  apenas uma pessoa orquestrando assistentes digitais
-                </strong>
-                . Ele vai ser mais rápido, mais barato e mais preciso. Agora imagine
-                essas mesmas 10 pessoas, cada uma orquestrando seus próprios
-                assistentes — o resultado não é 10x.{" "}
-                <strong className="text-foreground">É 50x</strong>. Isso não é sobre
-                reduzir equipes. É sobre aperfeiçoar cada profissional que você já tem.
-              </p>
-            </div>
-
-            {/* Visual comparativo: Modelo Tradicional vs Modelo Pineai */}
-            <div className="grid md:grid-cols-2 gap-6 mb-20 max-w-4xl mx-auto">
-              <div className="bg-muted/30 border border-dashed rounded-2xl p-8 space-y-5">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Modelo Tradicional
-                </p>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex -space-x-2">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                          <User className="h-3.5 w-3.5 text-muted-foreground/50" />
-                        </div>
-                      ))}
-                    </div>
-                    <span className="text-sm text-muted-foreground">5 pessoas</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-5 w-5 text-muted-foreground/50" />
-                    <span className="text-sm text-muted-foreground">5 dias</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-red-500/70">Sujeito a erro humano</span>
-                  </div>
-                </div>
-                <div className="pt-4 border-t">
-                  <p className="text-2xl font-bold text-muted-foreground">1 tarefa</p>
-                </div>
-              </div>
-
-              <div className="bg-background border-2 border-primary rounded-2xl p-8 space-y-5 relative">
-                <div className="absolute -top-3 right-6">
-                  <span className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1 rounded-full">
-                    Seu concorrente já faz isso
-                  </span>
-                </div>
-                <p className="text-xs font-medium text-primary uppercase tracking-wider">
-                  Modelo Pineai
-                </p>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center">
-                      <User className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <span className="text-sm">1 orquestrador + assistentes de IA</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Zap className="h-5 w-5 text-primary" />
-                    <span className="text-sm">5 minutos</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-primary">Precisão baseada em dados reais</span>
-                  </div>
-                </div>
-                <div className="pt-4 border-t">
-                  <p className="text-2xl font-bold">1 tarefa</p>
-                </div>
-              </div>
-            </div>
-
-            {/* A Solução + Fechamento */}
-            <div className="max-w-3xl mx-auto space-y-6">
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">A Pineai não vende software.</strong>{" "}
-                Nós entramos na sua operação, mapeamos seus processos e instalamos
-                um cérebro digital privado. Nós transformamos seus colaboradores
-                atuais nos orquestradores dessa inteligência. Colocamos a IA no
-                núcleo da sua empresa para que{" "}
-                <strong className="text-foreground">
-                  você seja quem dita o ritmo do mercado
-                </strong>
-                , e não quem tenta correr atrás dele.
-              </p>
-              <p className="text-lg font-semibold text-foreground">
-                Nós não queremos te vender uma ferramenta. Queremos te mostrar
-                como a sua empresa vai operar daqui a 2 anos.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* O Jeito Pineai - Passo a Passo */}
-      <section className="py-24">
+      {/* 6. O Jeito Pineai - Passo a Passo */}
+      <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">O Jeito Pineai</h2>
@@ -547,8 +547,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Soluções - Enterprise / Consultoria */}
-      <section id="solucoes" className="py-24 bg-muted/30">
+      {/* 7. Soluções - Enterprise / Consultoria */}
+      <section id="solucoes" className="py-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">
@@ -626,7 +626,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24">
+      <section className="py-24 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto text-center space-y-8">
             <h2 className="text-3xl font-bold">
@@ -661,7 +661,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t py-12">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
             {/* Logo e descrição */}
             <div className="space-y-4">
               <Logo size="md" />
@@ -696,23 +696,6 @@ export default function LandingPage() {
                 </p>
                 <p>Av. Sete de Setembro, 6556</p>
                 <p>Curitiba/PR</p>
-              </div>
-            </div>
-
-            {/* Plataforma */}
-            <div className="space-y-4">
-              <h4 className="font-semibold">Plataforma</h4>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p>
-                  <Link href="/platform" className="hover:text-foreground transition-colors">
-                    Acessar plataforma
-                  </Link>
-                </p>
-                <p>
-                  <Link href="/auth/login" className="hover:text-foreground transition-colors">
-                    Login
-                  </Link>
-                </p>
               </div>
             </div>
 
