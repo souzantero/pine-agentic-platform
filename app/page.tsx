@@ -123,6 +123,51 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* O Jeito PINE */}
+      <section className="py-28 md:py-40 border-t border-black/10">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto space-y-16">
+            <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight">
+              O jeito PINE.
+            </h2>
+            <div className="space-y-16">
+              <div className="space-y-4">
+                <p className="text-sm font-semibold uppercase tracking-widest text-black/30">
+                  01 — Consultoria
+                </p>
+                <p className="text-lg text-black/60 leading-relaxed">
+                  Entramos na sua operação antes de tocar em qualquer tecnologia.
+                  Mapeamos processos, entendemos gargalos e identificamos onde a
+                  IA gera impacto real — não onde parece bonito no slide.
+                </p>
+              </div>
+              <div className="space-y-4">
+                <p className="text-sm font-semibold uppercase tracking-widest text-black/30">
+                  02 — Implementação
+                </p>
+                <p className="text-lg text-black/60 leading-relaxed">
+                  Desenhamos e construímos a solução sob medida. Agentes
+                  inteligentes que conhecem seus dados, falam a língua da sua
+                  equipe e operam dentro das suas regras. Tudo integrado, sem
+                  fricção.
+                </p>
+              </div>
+              <div className="space-y-4">
+                <p className="text-sm font-semibold uppercase tracking-widest text-black/30">
+                  03 — Validação
+                </p>
+                <p className="text-lg text-black/60 leading-relaxed">
+                  Acompanhamos os resultados de perto. Ajustamos, refinamos e
+                  garantimos que a inteligência entregue funciona no mundo real —
+                  não só no ambiente de teste. Só saímos quando o sistema roda
+                  sozinho.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Final */}
       <section className="py-28 md:py-40 border-t border-black/10">
         <div className="container mx-auto px-4">
