@@ -18,7 +18,7 @@ export function Logo({ className, size = "md" }: LogoProps) {
   return (
     <span
       className={cn(
-        "font-extrabold tracking-wide select-none",
+        "font-extrabold tracking-widest select-none",
         sizeClasses[size],
         className
       )}
