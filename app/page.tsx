@@ -8,14 +8,22 @@ export default function LandingPage() {
       <header className="border-b border-foreground/10">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Logo size="md" />
-          <a
-            href="https://wa.me/5541992413811?text=Olá! Gostaria de conversar sobre soluções de IA para minha empresa."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-semibold uppercase tracking-widest hover:opacity-60 transition-opacity"
-          >
-            Vamos Conversar
-          </a>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/platform"
+              className="text-sm font-semibold uppercase tracking-widest hover:opacity-60 transition-opacity"
+            >
+              Plataforma
+            </Link>
+            <a
+              href="https://wa.me/5541992413811?text=Olá! Gostaria de conversar sobre soluções de IA para minha empresa."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-semibold uppercase tracking-widest hover:opacity-60 transition-opacity"
+            >
+              Vamos Conversar
+            </a>
+          </div>
         </div>
       </header>
 
@@ -30,7 +38,7 @@ export default function LandingPage() {
               Arquitetamos sistemas de IA que absorvem o operacional e devolvem o
               seu tempo estratégico. Simples, elegante e invisível.
             </p>
-            <div>
+            <div className="space-y-4">
               <a
                 href="https://wa.me/5541992413811?text=Olá! Gostaria de conversar sobre soluções de IA para minha empresa."
                 target="_blank"
@@ -39,6 +47,12 @@ export default function LandingPage() {
               >
                 Vamos Conversar
               </a>
+              <p className="text-sm text-foreground/40">
+                <Link href="/platform" className="underline underline-offset-4 hover:text-foreground/60 transition-colors">
+                  Veja a plataforma
+                </Link>
+                {" "}— um exemplo do que construímos.
+              </p>
             </div>
           </div>
         </div>
