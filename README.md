@@ -1,6 +1,6 @@
 # PINE
 
-Aplicacao de chat com integracao de agentes de IA e gestao multi-tenant de organizacoes.
+Aplicação de chat com integração de agentes de IA e gestão multi-tenant de organizações.
 
 ## Stack
 
@@ -27,12 +27,12 @@ python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
 # ou .venv\Scripts\activate  # Windows
 
-# Instalar dependencias
+# Instalar dependências
 pip install -r requirements.txt
 
-# Configurar variaveis de ambiente
+# Configurar variáveis de ambiente
 cp .env.example .env
-# Editar .env com suas configuracoes
+# Editar .env com suas configurações
 
 # Iniciar PostgreSQL (com Docker)
 docker-compose up -d
@@ -49,10 +49,10 @@ uvicorn src.api:app --reload --port 8888
 ```bash
 # Na raiz do projeto
 
-# Instalar dependencias
+# Instalar dependências
 npm install
 
-# Configurar variaveis de ambiente
+# Configurar variáveis de ambiente
 echo "NEXT_PUBLIC_API_URL=http://localhost:8888" > .env.local
 
 # Iniciar servidor de desenvolvimento
@@ -68,66 +68,66 @@ pine/
 ├── app/                    # Next.js pages e layouts
 ├── components/             # React components
 │   └── ui/                 # shadcn/ui primitives
-├── lib/                    # Utilitarios frontend
+├── lib/                    # Utilitários frontend
 │   ├── api.ts              # Cliente HTTP para backend
-│   └── session.tsx         # Context de sessao/autenticacao
+│   └── session.tsx         # Context de sessão/autenticação
 ├── server/                 # Backend Python (arquitetura modular)
 │   ├── src/
 │   │   ├── api.py          # FastAPI app
 │   │   ├── core/           # Base compartilhada (env, schemas, storage, email)
-│   │   ├── database/       # Conexao, entities, dependencies
-│   │   ├── auth/           # Autenticacao, JWT, verificacao email, reset senha
-│   │   ├── organization/   # Organizacoes, members, invites
-│   │   ├── roles/          # Gestao de roles
+│   │   ├── database/       # Conexão, entities, dependencies
+│   │   ├── auth/           # Autenticação, JWT, verificação email, reset senha
+│   │   ├── organization/   # Organizações, members, invites
+│   │   ├── roles/          # Gestão de roles
 │   │   ├── threads/        # Threads de chat, streaming SSE
-│   │   ├── providers/      # Configuracao de provedores LLM
-│   │   ├── models/         # Modelos de IA disponiveis
-│   │   ├── configs/        # Configuracoes de ferramentas
-│   │   ├── billing/        # Monetizacao com Stripe
+│   │   ├── providers/      # Configuração de provedores LLM
+│   │   ├── models/         # Modelos de IA disponíveis
+│   │   ├── configs/        # Configurações de ferramentas
+│   │   ├── billing/        # Monetização com Stripe
 │   │   ├── knowledge/      # Collections, documentos e RAG (pipeline ETL)
 │   │   ├── agent/          # Agente de IA (LangGraph)
 │   │   └── web/            # Ferramentas web (search, fetch)
 │   └── db/                 # Alembic migrations
-└── public/                 # Assets estaticos
+└── public/                 # Assets estáticos
 ```
 
 ## Funcionalidades
 
-**Autenticacao e Usuarios:**
-- Autenticacao com JWT (login, registro)
-- Verificacao de email no registro (Resend)
-- Recuperacao e alteracao de senha
-- Gestao de conta do usuario
+**Autenticação e Usuários:**
+- Autenticação com JWT (login, registro)
+- Verificação de email no registro (Resend)
+- Recuperação e alteração de senha
+- Gestão de conta do usuário
 
-**Organizacoes:**
-- Gestao de organizacoes multi-tenant
-- Sistema de permissoes RBAC
-- Convites para organizacoes
-- Gestao de membros e roles
+**Organizações:**
+- Gestão de organizações multi-tenant
+- Sistema de permissões RBAC
+- Convites para organizações
+- Gestão de membros e roles
 - Wizard de onboarding multi-step
 
 **Chat e IA:**
-- Threads de conversacao com streaming em tempo real
-- Renderizacao de Markdown nas mensagens
+- Threads de conversação com streaming em tempo real
+- Renderização de Markdown nas mensagens
 - Agente de IA com ferramentas (web_search, web_fetch, knowledge_search)
-- Configuracao de ferramentas por organizacao
+- Configuração de ferramentas por organização
 - Prompts de sistema
-- Configuracao de provedores (LLM: OpenAI, OpenRouter, Anthropic, Google; Web Search: Tavily)
+- Configuração de provedores (LLM: OpenAI, OpenRouter, Anthropic, Google; Web Search: Tavily)
 
 **Base de Conhecimento (RAG):**
 - Upload e processamento de documentos
-- Multiplas estrategias de chunking
-- Busca hibrida (semantica + keywords) com RRF
+- Múltiplas estratégias de chunking
+- Busca híbrida (semântica + keywords) com RRF
 - Ferramenta de busca RAG integrada ao agente
 
-**Monetizacao:**
-- Integracao com Stripe (checkout, portal, webhooks)
+**Monetização:**
+- Integração com Stripe (checkout, portal, webhooks)
 - Planos e limites de uso
-- Pagina de billing e assinaturas
+- Página de billing e assinaturas
 
 **Outros:**
 - Landing page profissional
-- Paginas de Politica de Privacidade e Termos de Uso
+- Páginas de Política de Privacidade e Termos de Uso
 
 ## Scripts
 
@@ -135,8 +135,8 @@ pine/
 
 ```bash
 npm run dev      # Servidor de desenvolvimento
-npm run build    # Build de producao
-npm run start    # Servidor de producao
+npm run build    # Build de produção
+npm run start    # Servidor de produção
 npm run lint     # ESLint
 ```
 
@@ -151,13 +151,13 @@ alembic revision --autogenerate -m "msg"     # Criar migration
 
 ## API
 
-O backend expoe os seguintes endpoints:
+O backend expõe os seguintes endpoints:
 
-| Endpoint | Descricao |
+| Endpoint | Descrição |
 |----------|-----------|
 | `POST /auth/login` | Login, retorna JWT |
-| `POST /auth/register` | Registro de usuario com verificacao de email |
-| `GET /auth/me` | Usuario atual e memberships |
+| `POST /auth/register` | Registro de usuário com verificação de email |
+| `GET /auth/me` | Usuário atual e memberships |
 | `POST /auth/verify-email` | Verificar email com token |
 | `POST /auth/forgot-password` | Solicitar reset de senha |
 | `POST /auth/reset-password` | Resetar senha com token |
@@ -166,11 +166,11 @@ O backend expoe os seguintes endpoints:
 | `GET /organizations/{id}/prompts` | Listar prompts |
 | `GET /organizations/{id}/members` | Listar membros |
 | `GET /organizations/{id}/roles` | Listar roles |
-| `GET /organizations/{id}/models` | Modelos disponiveis |
+| `GET /organizations/{id}/models` | Modelos disponíveis |
 | `GET /organizations/{id}/providers` | Provedores configurados (LLM, Web Search) |
-| `GET /organizations/{id}/configs` | Configuracoes de ferramentas |
+| `GET /organizations/{id}/configs` | Configurações de ferramentas |
 | `GET /organizations/{id}/collections` | Collections de conhecimento |
 | `GET /organizations/{id}/billing` | Status e uso do billing |
-| `POST /organizations/{id}/billing/checkout` | Criar sessao de checkout Stripe |
+| `POST /organizations/{id}/billing/checkout` | Criar sessão de checkout Stripe |
 
-Documentacao completa da API em: `http://localhost:8888/docs`
+Documentação completa da API em: `http://localhost:8888/docs`
